@@ -1,6 +1,6 @@
 BountifulDelvesHunter = BountifulDelvesHunter or {}
 
-version = "1.3.8"
+version = "1.5.1"
 
 if not BountifulDelvesHunterDB then
     BountifulDelvesHunterDB = {
@@ -17,7 +17,8 @@ if not BountifulDelvesHunterIconDB then
     }
 end
 
-SLASH_DELVES1 = "/BDH"
+SLASH_BDH1 = "/BDH"
+SLASH_BDH2 = "/bdh"
 
 legendRelics = C_QuestLine.GetQuestLineQuests(6015) 
 saltherilsHaven = {90573,90574,90575,90576}
@@ -33,27 +34,54 @@ BountifulDelvesHunterMainFrame = {}
 
 function showUI()
     Delves = {}
+	AllDelves = {}
 	LegacyDelves = {}
+	AllLegacyDelves = {}
+	
 	TWW = false
+	
+    if not C_AddOns.IsAddOnLoaded("Blizzard_DelvesCompanionConfiguration") then
+        C_AddOns.LoadAddOn("Blizzard_DelvesCompanionConfiguration")
+    end
 
     for delvePoiID, delveConfig in pairs(waypoints) do
         local delve = C_AreaPoiInfo.GetAreaPOIInfo(delveConfig["zone"], delvePoiID)
 		local storyVariant = GetStory(delve)
 		
+				
         if delve ~= nil and delve["atlasName"] == "delves-bountiful" then
+		
             local areaName = areaIDs[delveConfig["zone"]]
             local icon = C_UIWidgetManager.GetAllWidgetsBySetID(delve.iconWidgetSet)
             local isOvercharged = false
+			local dName = delve["name"]:gsub("^%s+", ""):gsub("%s+$", "")
+			local story_short = CleanStoryText(storyVariant)		
+			local tier = DelveStoryTiers[dName][story_short]
 
             if #icon == 2 then
                 isOvercharged = true
             end
-			if delveConfig["zone"] > 2392 then
-            Delves[delvePoiID] = { ["name"] = delve["name"], ["zone"] = areaName, ["overcharged"] = isOvercharged, ["story"] = storyVariant }
-			else 
-			LegacyDelves[delvePoiID] = { ["name"] = delve["name"], ["zone"] = areaName, ["overcharged"] = isOvercharged, ["story"] = storyVariant }
-			end
+	    if delveConfig["zone"] > 2392 then
+            Delves[delvePoiID] = { ["name"] = delve["name"], ["zone"] = areaName, ["overcharged"] = isOvercharged, ["story"] = storyVariant, ["tier"] = tier }
+	    else 
+			LegacyDelves[delvePoiID] = { ["name"] = delve["name"], ["zone"] = areaName, ["overcharged"] = isOvercharged, ["story"] = storyVariant, ["tier"] = tier }
+	    end
         end
+			
+    end
+	
+   for delveName, delveConfig in pairs(waypoints_all) do
+ 
+            local areaName = areaIDs[delveConfig["zone"]]
+            local isOvercharged = false
+
+	    if delveConfig["zone"] > 2392 then
+            AllDelves[delveName] = { ["name"] = delveName, ["zone"] = areaName, ["overcharged"] = isOvercharged} --, ["story"] = storyVariant }
+			
+	    else 
+			AllLegacyDelves[delveName] = { ["name"] = delveName, ["zone"] = areaName, ["overcharged"] = isOvercharged, ["story"] = storyVariant }
+	    end
+			
     end
 
     local function DrawDelvesGroup(container)
@@ -61,25 +89,8 @@ function showUI()
         for _ in pairs(Delves) do
             count = count + 1
         end
-        if count == 0 then
-            guiCreateNewline(container, 3)
-
-            if UnitLevel("player") < 68 then
-                local label = AceGUI:Create("Label")
-                label:SetText(getColorText("FF7E40", "  Delves unlock at Level 68"))
-                label:SetFont(GameFontHighlightLarge:GetFont())
-                label:SetFullWidth(true)
-                container:AddChild(label)
-            else
-                local label = AceGUI:Create("Label")
-                label:SetText(getColorText("FF7E40", "  There are currently no bountiful Delves available"))
-                label:SetFont(GameFontHighlightLarge:GetFont())
-                label:SetFullWidth(true)
-                container:AddChild(label)
-            end
-
-        else
-            guiCreateNewline(container, 2)
+		
+		 guiCreateNewline(container, 2)
 
             cofferKeys = C_CurrencyInfo.GetCurrencyInfo(3028)
             cofferKeyIcon = GetItemIcon(224172)
@@ -162,7 +173,22 @@ function showUI()
             text:SetWidth(420)
             text:SetFont(GameFontHighlightLarge:GetFont())
 	    container:AddChild(text)
+		
+		guiCreateNewline(container, 3)
 
+		JourneyIcon = 6025441
+		
+		local progress = C_MajorFactions.GetMajorFactionRenownInfo(C_DelvesUI.GetDelvesFactionForSeason())
+		local current = progress.renownReputationEarned
+		local maxP = progress.renownLevelThreshold
+			local prog = AceGUI:Create("InteractiveLabel")
+            prog:SetImage(JourneyIcon)
+            prog:SetImageSize(22, 22)
+			prog:SetText(("|cffFFFFFFJourney Stage \124cff3088E0%d      \124cffFFFFFFCurrent Progress: \124cff3088E0%d \124cffFFFFFF/ %d |r"):format(progress.renownLevel, current, maxP))
+            prog:SetWidth(420)
+            prog:SetFont(GameFontHighlightLarge:GetFont())
+			container:AddChild(prog)
+		
             guiCreateNewline(container, 3)
 
             local button = AceGUI:Create("Button")
@@ -201,7 +227,38 @@ function showUI()
                 BountifulDelvesHunterMainFrame:Hide()
             end)
             container:AddChild(lfgbutton2)
+			
+			local companionbtn = AceGUI:Create("Button")
+            companionbtn:SetText("Valeera")
+			companionbtn:SetWidth(100)
+            companionbtn:SetCallback("OnClick", function()			
+                BountifulDelvesHunterMainFrame:Hide()
+				ToggleFrame(DelvesCompanionConfigurationFrame)
+            end)
+			if DelvesCompanionConfigurationFrame then
+            container:AddChild(companionbtn)
+			end
 
+		
+        if count == 0 then
+            guiCreateNewline(container, 3)
+
+            if UnitLevel("player") < 68 then
+                local label = AceGUI:Create("Label")
+                label:SetText(getColorText("FF7E40", "  Delves unlock at Level 68"))
+                label:SetFont(GameFontHighlightLarge:GetFont())
+                label:SetFullWidth(true)
+                container:AddChild(label)
+            else
+                local label = AceGUI:Create("Label")
+                label:SetText(getColorText("FF7E40", "  There are currently no bountiful Delves available"))
+                label:SetFont(GameFontHighlightLarge:GetFont())
+                label:SetFullWidth(true)
+                container:AddChild(label)
+            end
+
+        else
+           
             local label = AceGUI:Create("Label")
             label:SetFullWidth(true)
             container:AddChild(label)
@@ -219,11 +276,18 @@ function showUI()
             label:SetWidth(220)
             container:AddChild(label)
 
+			local label = AceGUI:Create("Label")
+            label:SetText("Tier*")
+			BDH_VoidStyleLabel(label, "dim")
+            label:SetFont(GameFontHighlightSmall:GetFont())
+            label:SetWidth(60)
+            container:AddChild(label)
+
             local label = AceGUI:Create("Label")
             label:SetText("Zone")
 			BDH_VoidStyleLabel(label, "dim")
             label:SetFont(GameFontHighlightSmall:GetFont())
-            label:SetWidth(120)
+            label:SetWidth(100)
             container:AddChild(label)
 
             local label = AceGUI:Create("Label")
@@ -251,11 +315,21 @@ function showUI()
                 label:SetWidth(220)
                 container:AddChild(label)
 
+				local label = AceGUI:Create("Label")
+                label:SetText(delve["tier"])
+                label:SetFont(GameFontHighlightMedium:GetFont())
+                label:SetWidth(60)
+                container:AddChild(label)
+
+
+
                 local label = AceGUI:Create("Label")
                 label:SetText(delve["zone"])
                 label:SetFont(GameFontHighlightMedium:GetFont())
-                label:SetWidth(120)
+                label:SetWidth(100)
                 container:AddChild(label)
+				
+
 
                 local button = AceGUI:Create("Button")
                 button:SetText("Waypoint")
@@ -424,6 +498,258 @@ function showUI()
 				end
             end		
     end
+
+ local function DrawAllDelvesGroup(container)
+        local count = 0
+        for _ in pairs(AllDelves) do
+            count = count + 1
+        end
+		
+		 guiCreateNewline(container, 2)
+
+        if count == 0 then
+            guiCreateNewline(container, 3)
+
+            if UnitLevel("player") < 68 then
+                local label = AceGUI:Create("Label")
+                label:SetText(getColorText("FF7E40", "  Delves unlock at Level 68"))
+                label:SetFont(GameFontHighlightLarge:GetFont())
+                label:SetFullWidth(true)
+                container:AddChild(label)
+            else
+                local label = AceGUI:Create("Label")
+                label:SetText(getColorText("FF7E40", "  There are currently no Delves available"))
+                label:SetFont(GameFontHighlightLarge:GetFont())
+                label:SetFullWidth(true)
+                container:AddChild(label)
+            end
+
+        else
+           
+            local label = AceGUI:Create("Label")
+            label:SetFullWidth(true)
+            container:AddChild(label)
+
+            guiCreateNewline(container, 1)
+
+            local label = AceGUI:Create("Label")
+            label:SetFullWidth(true)
+            container:AddChild(label)
+
+            local label = AceGUI:Create("Label")
+            label:SetText("Delve Name")
+			BDH_VoidStyleLabel(label, "dim")
+            label:SetFont(GameFontHighlightSmall:GetFont())
+            label:SetWidth(220)
+            container:AddChild(label)
+
+            local label = AceGUI:Create("Label")
+            label:SetText("Zone")
+			BDH_VoidStyleLabel(label, "dim")
+            label:SetFont(GameFontHighlightSmall:GetFont())
+            label:SetWidth(120)
+            container:AddChild(label)
+
+            local label = AceGUI:Create("Label")
+            label:SetFont(GameFontHighlightSmall:GetFont())
+            label:SetWidth(150)
+            container:AddChild(label)
+
+            local label = AceGUI:Create("Label")
+            label:SetFullWidth(true)
+            container:AddChild(label)
+
+            for mapPoiID, delve in pairs(AllDelves) do
+                local label = AceGUI:Create("Label")
+                --label:SetImageSize(18, 18)
+                local name = ""
+
+                if delve["overcharged"] == true then
+                    name = "(OC) " .. "\124cffFF9C00" .. delve["name"] .. "\124r"
+                else
+                    name = "\124cffA335EE" .. delve["name"]  .. "\124r"
+                end
+
+                label:SetText(name)
+                label:SetFont(GameFontHighlightMedium:GetFont())
+                label:SetWidth(220)
+                container:AddChild(label)
+
+                local label = AceGUI:Create("Label")
+                label:SetText(delve["zone"])
+                label:SetFont(GameFontHighlightMedium:GetFont())
+                label:SetWidth(120)
+                container:AddChild(label)
+
+                local button = AceGUI:Create("Button")
+                button:SetText("Waypoint")
+                button:SetWidth(120)
+                button:SetCallback("OnClick", function()
+                    setWaypointAll("default", mapPoiID, delve["name"])
+                end)
+                container:AddChild(button)
+
+                local button = AceGUI:Create("Button")
+                button:SetText("TomTom")
+                button:SetWidth(120)
+                button:SetCallback("OnClick", function()
+                    setWaypointAll("tomtom", mapPoiID, delve["name"])
+                end)
+                container:AddChild(button)
+
+                if C_AddOns.IsAddOnLoaded("TomTom") == false then
+                    button:SetDisabled(true)
+                end
+								
+				--local storyLbl = AceGUI:Create("Label")
+				--storyLbl:SetText(delve["story"])
+				--storyLbl:SetHeight(5)
+				--BDH_VoidStyleLabel(storyLbl, "dim")
+                --storyLbl:SetFont(GameFontHighlightSmall:GetFont())
+                --storyLbl:SetFullWidth(true)
+			   --container:AddChild(storyLbl)
+				
+            end
+        end
+		guiCreateNewline(container, 5)
+		
+		local TWWHeader = AceGUI:Create("Label")
+        TWWHeader:SetText("The War Within Delves ")
+		BDH_VoidStyleLabel(TWWHeader, "dim")
+		TWWHeader:SetFont(GameFontHighlightLarge:GetFont())
+        TWWHeader:SetWidth(500)
+        if BountifulDelvesHunterDB.TWW == true then 
+			container:AddChild(TWWHeader)
+		else
+			AceGUI:Release(TWWHeader)     
+			TWWHeader = nil
+		end
+		
+	        local Linfo = AceGUI:Create("Label")
+            Linfo:SetFullWidth(true)
+			BDH_VoidStyleLabel(Linfo, "secondary")
+			Linfo:SetText("Please remember that these do not grant loot on current level")
+			Linfo:SetFont(GameFontHighlightMedium:GetFont())
+            if BountifulDelvesHunterDB.TWW == true then 
+			container:AddChild(Linfo)
+			else
+			AceGUI:Release(Linfo)     
+			Linfo = nil
+			end
+
+            guiCreateNewline(container, 2)
+
+            local label = AceGUI:Create("Label")
+            label:SetFullWidth(true)
+            container:AddChild(label)
+
+            local DName = AceGUI:Create("Label")
+            DName:SetText("Delve Name")
+			BDH_VoidStyleLabel(DName, "dim")
+            DName:SetFont(GameFontHighlightSmall:GetFont())
+            DName:SetWidth(220)
+			if BountifulDelvesHunterDB.TWW == true then 
+			container:AddChild(DName)
+			else
+			AceGUI:Release(DName)     
+			DName = nil
+			end
+           
+            local DZone = AceGUI:Create("Label")
+            DZone:SetText("Zone")
+			BDH_VoidStyleLabel(DZone, "dim")
+            DZone:SetFont(GameFontHighlightSmall:GetFont())
+            DZone:SetWidth(120)
+            if BountifulDelvesHunterDB.TWW == true then 
+			container:AddChild(DZone)
+			else
+			AceGUI:Release(DZone)     
+			DName = nil
+			end
+
+            local label = AceGUI:Create("Label")
+            label:SetFont(GameFontHighlightSmall:GetFont())
+            label:SetWidth(150)
+            container:AddChild(label)
+
+            local label = AceGUI:Create("Label")
+            label:SetFullWidth(true)
+            container:AddChild(label)
+
+            for mapPoiID, delve in pairs(AllLegacyDelves) do
+                local LDelves = AceGUI:Create("Label")
+                LDelves:SetImageSize(18, 18)
+                local name = ""
+
+                if delve["overcharged"] == true then
+                    name = "(OC) " .. "\124cffFF9C00" .. delve["name"] .. "\124r"
+                else
+                    name = "\124cffA335EE" .. delve["name"] .. "\124r"
+                end
+
+                LDelves:SetText(name)
+                LDelves:SetFont(GameFontHighlightMedium:GetFont())
+                LDelves:SetWidth(220)
+               	if BountifulDelvesHunterDB.TWW == true then 
+				container:AddChild(LDelves)
+				else
+				AceGUI:Release(LDelves)     
+				LDelves = nil
+				end
+
+                local DelveZone = AceGUI:Create("Label")
+                DelveZone:SetText(delve["zone"])
+                DelveZone:SetFont(GameFontHighlightMedium:GetFont())
+                DelveZone:SetWidth(120)
+				if BountifulDelvesHunterDB.TWW == true then 
+				container:AddChild(DelveZone)
+				else
+				AceGUI:Release(DelveZone)     
+				DelveZone = nil
+				end
+
+                local WPbutton = AceGUI:Create("Button")
+                WPbutton:SetText("Waypoint")
+                WPbutton:SetWidth(120)
+                WPbutton:SetCallback("OnClick", function()
+                    setWaypointAll("default", mapPoiID, delve["name"])
+                end)
+                if BountifulDelvesHunterDB.TWW == true then 
+				container:AddChild(WPbutton)
+				else
+				AceGUI:Release(WPbutton)     
+				WPbutton = nil
+				end
+
+                local TTbutton = AceGUI:Create("Button")
+                TTbutton:SetText("TomTom")
+                TTbutton:SetWidth(120)
+                TTbutton:SetCallback("OnClick", function()
+                    setWaypointAll("tomtom", mapPoiID, delve["name"])
+                end)
+                if BountifulDelvesHunterDB.TWW == true then 
+				container:AddChild(TTbutton)
+				if C_AddOns.IsAddOnLoaded("TomTom") == false then
+                    TTbutton:SetDisabled(true)
+                end
+				else
+				AceGUI:Release(TTbutton)     
+				TTbutton = nil
+				end
+
+				local storyLbl = AceGUI:Create("Label")
+				storyLbl:SetText(delve["story"])
+				storyLbl:SetHeight(5)
+				BDH_VoidStyleLabel(storyLbl, "dim")
+                storyLbl:SetFont(GameFontHighlightSmall:GetFont())
+                storyLbl:SetFullWidth(true)
+				if BountifulDelvesHunterDB.TWW == true then 
+			    container:AddChild(storyLbl)
+				end
+            end		
+    end
+
+
 
 	local function DrawCofferShardsWQGroup(container)
     container:ReleaseChildren()
@@ -609,7 +935,7 @@ function showUI()
         end
 
             guiCreateNewline(container, 5)
-		
+	end
 	if #wqs.specialAssignments == 0 then
         local noneSA = AceGUI:Create("Label")
         noneSA:SetText("No active Special Assignment Quests.  You finished " .. finished .. " of 3 this week ")
@@ -713,7 +1039,7 @@ function showUI()
 				end	
 			end
 		end
-	end
+	
 		guiCreateNewline(container, 3)
 		
 		local otherLbl = AceGUI:Create("Label")
@@ -917,7 +1243,7 @@ function showUI()
 		row2:SetHeight(80) 
 		container:AddChild(row2)
 		
-		local mapID = 254257
+		local mapID = 252415
 		local mapItemId = 265714
 		local mapIcon = 1064187
         local delverBountyIcon = AceGUI:Create("Icon")
@@ -1011,6 +1337,8 @@ function showUI()
             DrawTiersOverviewGroup(container)
         elseif group == "tab3" then
             DrawOptionsOverviewGroup(container)
+		elseif group == "tab3" then
+            DrawAllDelvesGroupGroup(container)
         end
     end
 
@@ -1022,7 +1350,11 @@ function showUI()
 	BountifulDelvesHunterMainFrame:SetCallback("OnClose", function(widget)
     isFrameVisible = false
 	end)
+	if BountifulDelvesHunterDB.TWW == true then 
+	BountifulDelvesHunterMainFrame:SetHeight(1000)
+	else
 	BountifulDelvesHunterMainFrame:SetHeight(700)
+	end
 	BountifulDelvesHunterMainFrame:SetLayout("Fill")
 
 	local frame = BountifulDelvesHunterMainFrame.frame
@@ -1043,10 +1375,11 @@ function showUI()
 	setBackdropBorderColor(tab.frame, VOID_THEME.border_void)
     tab:SetLayout("Flow")
     tab:SetTabs({
-        { text = "\124cff3088ffBountiful Delves", value = "tab1" },
-        { text = "\124cff3088ffTiers Overview",   value = "tab2" },
-        { text = "\124cff3088ffCoffer Shards WQs",value = "tab4" },   
-        { text = "\124cff3088ffOptions",          value = "tab3" }
+        { text = "\124cff3088ffBountiful Delves", 	value = "tab1" },
+        { text = "\124cff3088ffTiers Overview",   	value = "tab2" },
+        { text = "\124cff3088ffCoffer Shards WQs",	value = "tab4" },
+		{ text = "\124cff3088ffAll Delve Waypoints",value = "tab5" },	
+        { text = "\124cff3088ffOptions",         	value = "tab3" }
     })
     tab:SetCallback("OnGroupSelected", function(container, event, group)
         container:ReleaseChildren()
@@ -1056,14 +1389,16 @@ function showUI()
         { text = "Bountiful Delves", value = "tab1" },
         { text = "\124cff3088ffTiers and Info",   value = "tab2" },
         { text = "\124cff3088ffCoffer Shards WQs",value = "tab4" },   
-        { text = "\124cff3088ffOptions",          value = "tab3" }
+ 		{ text = "\124cff3088ffAll Delve Waypoints",value = "tab5" },
+		{ text = "\124cff3088ffOptions",          value = "tab3" }
     })	
         elseif group == "tab2" then
             DrawTiersOverviewGroup(container)
 			tab:SetTabs({
         { text = "\124cff3088ffBountiful Delves", value = "tab1" },
         { text = "Tiers and Info",   value = "tab2" },
-        { text = "\124cff3088ffCoffer Shards WQs",value = "tab4" },   
+        { text = "\124cff3088ffCoffer Shards WQs",value = "tab4" },
+		{ text = "\124cff3088ffAll Delve Waypoints",value = "tab5" },	
         { text = "\124cff3088ffOptions",          value = "tab3" }
 		})
         elseif group == "tab4" then
@@ -1072,6 +1407,7 @@ function showUI()
         { text = "\124cff3088ffBountiful Delves", value = "tab1" },
         { text = "\124cff3088ffTiers and Info",   value = "tab2" },
         { text = "Coffer Shards WQs",value = "tab4" },   
+		{ text = "\124cff3088ffAll Delve Waypoints",value = "tab5" },
         { text = "\124cff3088ffOptions",          value = "tab3" }
 		})
         elseif group == "tab3" then
@@ -1080,7 +1416,17 @@ function showUI()
         { text = "\124cff3088ffBountiful Delves", value = "tab1" },
         { text = "\124cff3088ffTiers and Info",   value = "tab2" },
         { text = "\124cff3088ffCoffer Shards WQs",value = "tab4" },   
+		{ text = "\124cff3088ffAll Delve Waypoints",value = "tab5" },
         { text = "Options",          value = "tab3" }
+		})	
+		elseif group == "tab5" then
+            DrawAllDelvesGroup(container)
+			tab:SetTabs({
+        { text = "\124cff3088ffBountiful Delves", value = "tab1" },
+        { text = "\124cff3088ffTiers and Info",   value = "tab2" },
+        { text = "\124cff3088ffCoffer Shards WQs",value = "tab4" },
+		{ text = "All Delve Waypoints",           value = "tab5" },
+        { text = "\124cff3088ffOptions",          value = "tab3" }
 		})	
         end
     end)
@@ -1118,8 +1464,10 @@ function DrawOptionsOverviewGroup(container)
     button:SetCallback("OnClick", function()
         if BountifulDelvesHunterDB.TWW == true then
            BountifulDelvesHunterDB.TWW = false
+		   BountifulDelvesHunterMainFrame:SetHeight(700)
         else
             BountifulDelvesHunterDB.TWW = true
+			BountifulDelvesHunterMainFrame:SetHeight(1000)
         end
     end)
     container:AddChild(button)
@@ -1127,7 +1475,7 @@ function DrawOptionsOverviewGroup(container)
 	guiCreateNewline(container, 3)
 	
 	 local label = AceGUI:Create("Label")
-        label:SetText("This Addon is based on the original Bountiful Delves Helper by Menelitos. I loved that Addon and used it all the time, but at some point, it was no longer updated. I kept it current with line by line changes in TWW and Pre-Patch, but that was obviously not an option for Midnight. \nKudos to Menelitos for the original idea and general feel of the addon. \n\nI tried to add a little Midnight flavor to this with the color theme, hope you like it.")
+        label:SetText("This Addon is based on the original Bountiful Delves Helper by Menelitos. I loved that Addon and used it all the time, but at some point, it was no longer updated. I kept it current with line by line changes in TWW and Pre-Patch, but that was obviously not an option for Midnight. \nKudos to Menelitos for the original idea and general feel of the addon. \n\nI tried to add a little Midnight flavor to this with the color theme, hope you like it. \n\n* Tier List according to wowhead.com where S-Tier is fastest/easiest and F-Tier slowest/hardest. Visit their page for more great info on the delves.")
 		BDH_VoidStyleLabel(label, "dimmer")
         label:SetFont(GameFontHighlightMedium:GetFont())
         label:SetWidth(600)
