@@ -1,8 +1,8 @@
-## Interface: 120001, 120000
+## Interface: 120005, 120001, 120000
 ## Title: Bountiful Delves Hunter - Midnight
 ## Notes: Bountiful Delves Hunter - Midnight
 ## Author: BejayGE
-## Version: 1.3.8
+## Version: 1.5.1
 ## SavedVariablesPerCharacter: BountifulDelvesHunterDB, BountifulDelvesHunterIconDB
 ## IconTexture: Interface\AddOns\BountifulDelvesHunter-Midnight\minimap.tga
 # Libraries
