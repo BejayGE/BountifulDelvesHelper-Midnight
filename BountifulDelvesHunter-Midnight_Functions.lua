@@ -16,6 +16,19 @@ function setWaypoint(type, mapPoiID, name)
     end
 end
 
+function setWaypointAll(type, mapPoiID, name)
+    local waypoint = waypoints_all[mapPoiID]
+    if type == "default" then
+        local point = UiMapPoint.CreateFromCoordinates(waypoint["zone"], waypoint["x"] / 100, waypoint["y"] / 100)
+        C_Map.SetUserWaypoint(point)
+        C_SuperTrack.SetSuperTrackedUserWaypoint(true)
+    elseif type == "tomtom" then
+        local tomtomCommand = "/way #" .. waypoint["zone"] .. " " .. waypoint["x"] .. " " .. waypoint["y"] .. " " .. name;
+        DEFAULT_CHAT_FRAME.editBox:SetText(tomtomCommand)
+        ChatEdit_SendText(DEFAULT_CHAT_FRAME.editBox, 0)
+    end
+end
+
 function setWaypointFromXY(type, zoneID, x, y, name)
     if type == "default" then
         local point = UiMapPoint.CreateFromCoordinates(zoneID, x / 100, y / 100)
@@ -131,6 +144,28 @@ function GetStory(areaPOIContent)
 			end
 		end
 end
+
+function CleanStoryText(text)
+    if not text then return "" end
+    text = tostring(text)
+
+    -- Remove known prefixes and color codes
+    text = text
+        :gsub("^Story Variant:%s*", "")
+        :gsub("nWHITE_FONT_COLOR:", "")
+        :gsub("|c%x%x%x%x%x%x%x%x", "")   -- Standard full |cRRGGBBAA color code (exactly 8 hex)
+        :gsub("|c%x%x%x%x%x%x", "")       -- Sometimes shorter codes
+        :gsub("|c", "")                   -- Catch any remaining bare |c
+        :gsub("|r", "")
+        :gsub("|T.-|t", "")               -- Remove texture codes if any
+
+    -- Final cleanup
+    text = text:match("^%s*(.-)%s*$")     -- Proper trim
+    text = text:gsub("%s+", " ")          -- Normalize spaces
+
+    return text
+end
+
 
 function Count_FinishedQuests (allQ)
 
