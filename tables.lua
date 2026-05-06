@@ -249,6 +249,7 @@ waypoints_all = {
     ["Shadowguard Point"] = {
         ["Calamitous"] = "D-Tier",
         ["Captured Wildlife"] = "\124cff9d9d9dF-Tier",
+		["Captured Widlife"] = "\124cff9d9d9dF-Tier",
         ["Stolen Mana"] = "\124cff9d9d9dF-Tier",
     },
 
