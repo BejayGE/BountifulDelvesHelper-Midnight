@@ -2,7 +2,7 @@
 ## Title: Bountiful Delves Hunter - Midnight
 ## Notes: Bountiful Delves Hunter - Midnight
 ## Author: BejayGE
-## Version: 1.5.2
+## Version: 1.5.3
 ## SavedVariablesPerCharacter: BountifulDelvesHunterDB, BountifulDelvesHunterIconDB
 ## IconTexture: Interface\AddOns\BountifulDelvesHunter-Midnight\minimap.tga
 # Libraries
