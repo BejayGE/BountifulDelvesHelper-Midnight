@@ -1,6 +1,6 @@
 BountifulDelvesHunter = BountifulDelvesHunter or {}
 
-version = "1.5.2"
+version = "1.5.3"
 
 if not BountifulDelvesHunterDB then
     BountifulDelvesHunterDB = {
