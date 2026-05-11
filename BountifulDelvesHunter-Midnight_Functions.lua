@@ -129,6 +129,7 @@ function split(pString, pPattern)
 end
 
 function GetStory(areaPOIContent)
+
         if areaPOIContent and areaPOIContent.tooltipWidgetSet then
             local tTipWidgets = C_UIWidgetManager.GetAllWidgetsBySetID(areaPOIContent.tooltipWidgetSet)
 
@@ -136,8 +137,8 @@ function GetStory(areaPOIContent)
                 for _, info in ipairs(tTipWidgets) do
                     if info.widgetType == Enum.UIWidgetVisualizationType.TextWithState then
                         local widgetViz = C_UIWidgetManager.GetTextWithStateWidgetVisualizationInfo(info.widgetID)
-                        if widgetViz and widgetViz.orderIndex == 0 then
-							return (widgetViz.text)
+                        if widgetViz and widgetViz.orderIndex == 0 then 
+							return widgetViz.text
 						end
 					end	
 				end	
@@ -152,6 +153,11 @@ function CleanStoryText(text)
     -- Remove known prefixes and color codes
     text = text
         :gsub("^Story Variant:%s*", "")
+		:gsub("^Geschichtsvariation:%s*", "")
+		:gsub("^Variante d’histoire :%s*", "")
+		:gsub("^Variante d’histoire:%s*", "")
+		:gsub("^Variante de historia:%s*", "")
+		:gsub("^Variación de historia:%s*", "")
         :gsub("nWHITE_FONT_COLOR:", "")
         :gsub("|c%x%x%x%x%x%x%x%x", "")   -- Standard full |cRRGGBBAA color code (exactly 8 hex)
         :gsub("|c%x%x%x%x%x%x", "")       -- Sometimes shorter codes
