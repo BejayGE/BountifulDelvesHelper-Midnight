@@ -197,67 +197,188 @@ waypoints_all = {
 	
 	}
 	
-	DelveStoryTiers = {
-    ["Collegiate Calamity"] = {
+DelveStoryTiers = {
+-- Collegiate Calamity
+    ["8426"] = {
         ["Invasive Glow"] = "\124cffFF9C00S-Tier",
         ["Academy Under Siege"] = "\124cffa335eeA-Tier",
         ["Faculty of Fear"] = "\124cff0070ddB-Tier",
+        -- DE
+        ["Invasives Leuchten"] = "\124cffFF9C00S-Tier",
+        ["Belagerte Akademie"] = "\124cffa335eeA-Tier",
+        ["Fakultät der Furcht"] = "\124cff0070ddB-Tier",
+        -- FR
+        ["Luminescence envahissante"] = "\124cffFF9C00S-Tier",
+        ["Académie assiégée"] = "\124cffa335eeA-Tier",
+        ["Aptitude à la peur"] = "\124cff0070ddB-Tier",
+        -- ES
+        ["Resplandor invasivo"] = "\124cffFF9C00S-Tier",
+        ["Academia asediada"] = "\124cffa335eeA-Tier",
+        ["Facultad del miedo"] = "\124cff0070ddB-Tier",
     },
-
-    ["The Darkway"] = {
+-- The Darkway
+    ["8440"] = {
         ["Ogre Powered"] = "\124cffa335eeA-Tier",
         ["Focusers Under Pressure"] = "\124cff0070ddB-Tier",
         ["Leyline Technician"] = "D-Tier",
+        -- DE
+        ["Ogerbetrieben"] = "\124cffa335eeA-Tier",
+        ["Fokussierer unter Druck"] = "\124cff0070ddB-Tier",
+        ["Leylinientechniker"] = "D-Tier",
+        -- FR
+        ["Puissance ogre"] = "\124cffa335eeA-Tier",
+        ["Focalisateurs sous pression"] = "\124cff0070ddB-Tier",
+        ["Spécialiste de lignes telluriques"] = "D-Tier",
+        -- ES
+        ["Potenciamiento ogro"] = "\124cffa335eeA-Tier",
+        ["Concentradores bajo presión"] = "\124cff0070ddB-Tier",
+        ["Técnico de líneas Ley"] = "D-Tier",
     },
-
-    ["The Gulf of Memory"] = {
+-- The Gulf of Memory
+    ["8436"] = { 
         ["Sporasaur Special"] = "\124cffa335eeA-Tier",
         ["Alnmoth Munchies"] = "\124cff1eff00C-Tier",
         ["Descent of the Haranir"] = "D-Tier",
+        -- DE
+        ["Sporasaurus Spezial"] = "\124cffa335eeA-Tier",
+        ["Heißhunger der Alnmotten"] = "\124cff1eff00C-Tier",
+        ["Abstieg der Haranir"] = "D-Tier",
+        -- FR (Korrigiert: Kein Artikel, kein Plural-s am Ende)
+        ["Descente des Haranir"] = "D-Tier",
+        ["Opération sporosaure"] = "\124cffa335eeA-Tier",
+        ["Alnidés affamés"] = "\124cff1eff00C-Tier",
+        -- ES
+        ["Especial de esporasaurio"] = "\124cffa335eeA-Tier",
+        ["Bocaditos para polillas de Aln"] = "\124cff1eff00C-Tier",
+        ["Descenso de los haranir"] = "D-Tier",
     },
-
-    ["Parhelion Plaza"] = {
-        ["Holding the Line"] = "\124cffa335ee\124cffa335eeA-Tier",
+--Parhelion Plaza
+    ["8428"] = {
+        ["Holding the Line"] = "\124cffa335eeA-Tier",
         ["March of the Arcane Brigade"] = "\124cff9d9d9dF-Tier",
         ["Bombing Run"] = "\124cff9d9d9dF-Tier",
+        -- DE
+        ["Die Stellung halten"] = "\124cffa335eeA-Tier",
+        ["Marsch der arkanen Brigade"] = "\124cff9d9d9dF-Tier",
+        ["Bombenangriff"] = "\124cff9d9d9dF-Tier",
+        -- FR
+        ["Tenir le front"] = "\124cffa335eeA-Tier",
+        ["La marche de la brigade des arcanes"] = "\124cff9d9d9dF-Tier",
+        ["Mission de bombardement"] = "\124cff9d9d9dF-Tier",
+        -- ES
+        ["Defender el frente"] = "\124cffa335eeA-Tier",
+        ["La marcha de la brigada Arcana"] = "\124cff9d9d9dF-Tier",
+        ["Bombardeo"] = "\124cff9d9d9dF-Tier",
     },
-
-    ["Sunkiller Sanctum"] = {
+-- Sunkiller Sanctum
+    ["8430"] = {
         ["Core of the Problem"] = "\124cff0070ddB-Tier",
         ["Not What I Expected"] = "\124cff1eff00C-Tier",
         ["The Gravitational Effect"] = "D-Tier",
+        -- DE
+        ["Der Kern des Problems"] = "\124cff0070ddB-Tier",
+        ["Nicht, was ich erwartet hatte"] = "\124cff1eff00C-Tier",
+        ["Der Gravitationseffekt"] = "D-Tier",
+        -- FR
+        ["Le cœur du problème"] = "\124cff0070ddB-Tier",
+        ["Ce n’est pas ce à quoi je m’attendais"] = "\124cff1eff00C-Tier",
+        ["L’effet gravitationnel"] = "D-Tier",
+        -- ES
+        ["El núcleo del problema"] = "\124cff0070ddB-Tier",
+        ["No era lo que esperaba"] = "\124cff1eff00C-Tier",
+        ["El efecto gravitatorio"] = "D-Tier",
     },
-
-    ["Twilight Crypts"] = {
+-- Twilight Crypts
+    ["8442"] = {
         ["Party Crasher"] = "\124cff0070ddB-Tier",
         ["Trapped"] = "\124cff1eff00C-Tier",
         ["Loosed Loa"] = "D-Tier",
+        -- DE
+        ["Ungeladene Gäste"] = "\124cff0070ddB-Tier",
+        ["Gefangen!"] = "\124cff1eff00C-Tier",
+        ["Gelöste Loa"] = "D-Tier",
+        -- FR
+        ["Trouble-fête"] = "\124cff0070ddB-Tier",
+        ["Un piège !"] = "\124cff1eff00C-Tier",
+        ["Loa libre"] = "D-Tier",
+        -- ES
+        ["Aguafiestas"] = "\124cff0070ddB-Tier",
+        ["¡Atrapado!"] = "\124cff1eff00C-Tier",
+        ["Loa a la fuga"] = "D-Tier",
     },
-
-    ["Atal'Aman"] = {
+-- Atal'Aman
+    ["8444"] = {
         ["Toadly Unbecoming"] = "\124cff0070ddB-Tier",
         ["Totem Annihilation"] = "\124cff1eff00C-Tier",
         ["Ritual Interrupted"] = "D-Tier",
+        -- DE
+        ["Krötal unwürdig"] = "\124cff0070ddB-Tier",
+        ["Totemvernichtung"] = "\124cff1eff00C-Tier",
+        ["Ritual Unterbrochen"] = "D-Tier",
+        -- FR
+        ["Métamorphose indigne"] = "\124cff0070ddB-Tier",
+        ["Annihilation de totems"] = "\124cff1eff00C-Tier",
+        ["Rituel interrompu"] = "D-Tier",
+        -- ES
+        ["Deshacer de los sapos"] = "\124cff0070ddB-Tier",
+        ["Aniquilación de tótems"] = "\124cff1eff00C-Tier",
+        ["Ritual interrumpido"] = "D-Tier",
     },
-
-    ["The Shadow Enclave"] = {
+-- The Shadow Enclave
+    ["8438"] = {
         ["Traitor's Due"] = "\124cff1eff00C-Tier",
         ["Mirror Shine"] = "\124cff9d9d9dF-Tier",
         ["Shadowy Supplies"] = "\124cff9d9d9dF-Tier",
+        -- DE
+        ["Schuld eines Verräters"] = "\124cff1eff00C-Tier",
+        ["Spiegelglanz"] = "\124cff9d9d9dF-Tier",
+        ["Schattenhafte Vorräte"] = "\124cff9d9d9dF-Tier",
+        -- FR
+        ["La rançon de la trahison"] = "\124cff1eff00C-Tier",
+        ["Reflet de miroir"] = "\124cff9d9d9dF-Tier",
+        ["Fournitures mystérieuses"] = "\124cff9d9d9dF-Tier",
+        -- ES
+        ["Castigo merecido"] = "\124cff1eff00C-Tier",
+        ["Brillo de espejo"] = "\124cff9d9d9dF-Tier",
+        ["Suministros sombríos"] = "\124cff9d9d9dF-Tier",
     },
-
-    ["Shadowguard Point"] = {
+ -- Shadowguard Point
+    ["8432"] = {
         ["Calamitous"] = "D-Tier",
         ["Captured Wildlife"] = "\124cff9d9d9dF-Tier",
-		["Captured Widlife"] = "\124cff9d9d9dF-Tier",
         ["Stolen Mana"] = "\124cff9d9d9dF-Tier",
+        -- DE
+        ["Verhängnisvoll"] = "D-Tier",
+        ["Gefangene Wildtiere"] = "\124cff9d9d9dF-Tier",
+        ["Gestohlenes Mana"] = "\124cff9d9d9dF-Tier",
+        -- FR
+        ["Calamité"] = "D-Tier",
+        ["Faune capturée"] = "\124cff9d9d9dF-Tier",
+        ["Mana volé"] = "\124cff9d9d9dF-Tier",
+        -- ES
+        ["Calamitoso"] = "D-Tier",
+        ["Fauna capturada"] = "\124cff9d9d9dF-Tier",
+        ["Maná robado"] = "\124cff9d9d9dF-Tier",
     },
-
-    ["The Grudge Pit"] = {
+-- The Grudge Pit
+    ["8434"] = {
         ["Arena Champion"] = "D-Tier",
         ["Lightbloom Invasion"] = "\124cff9d9d9dF-Tier",
         ["Dastardly Rotstalk"] = "\124cff9d9d9dF-Tier",
+        -- DE
+        ["Arenachampion"] = "D-Tier",
+        ["Lichtblüteninvasion"] = "\124cff9d9d9dF-Tier",
+        ["Durchtriebener Faulstrunk"] = "\124cff9d9d9dF-Tier",
+        -- FR
+        ["Championnat d’arène"] = "D-Tier",
+        ["Invasion du luméclat"] = "\124cff9d9d9dF-Tier",
+        ["Vilaine tige-pourrie"] = "\124cff9d9d9dF-Tier",
+        -- ES
+        ["Campeón de la arena"] = "D-Tier",
+        ["Invasión de floraluz"] = "\124cff9d9d9dF-Tier",
+        ["Vil tallopudre"] = "\124cff9d9d9dF-Tier",
     }
+
 }
 
 	
