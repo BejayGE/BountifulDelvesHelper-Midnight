@@ -1,12 +1,14 @@
 BountifulDelvesHunter = BountifulDelvesHunter or {}
 
-version = "1.5.3"
+version = C_AddOns.GetAddOnMetadata("BountifulDelvesHunter-Midnight", "Version") or "1.0.0"
+locale = "enUS"
 
 if not BountifulDelvesHunterDB then
     BountifulDelvesHunterDB = {
         highestDelveTier = nil,
         waypointSystem = "default",
-		TWW = false
+		TWW = false,
+		locale = "enUS"
     }
 end
 
@@ -27,6 +29,17 @@ preyQuests = C_QuestLine.GetQuestLineQuests(5945)
 local cofferShardCurrencyID = 3310
 local sortBy = "zone"  
 local sortDescending = false 
+local TROVEHUNTER_BOUNTY_ITEMID = 265714
+local toastFrame
+-- local usedThisWeek = C_QuestLog.IsQuestFlaggedCompleted(92887)
+
+	local frame = CreateFrame("Frame")
+	frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+	frame:RegisterEvent("UPDATE_UI_WIDGET")
+	frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+	
+	local popupShown = false
+	local pendingPopup = false
 
 AceGUI = LibStub("AceGUI-3.0")
 isFrameVisible = false
@@ -37,7 +50,8 @@ function showUI()
 	AllDelves = {}
 	LegacyDelves = {}
 	AllLegacyDelves = {}
-	
+	locale = BountifulDelvesHunterDB.locale or "enUS"
+		
 	TWW = false
 	
     if not C_AddOns.IsAddOnLoaded("Blizzard_DelvesCompanionConfiguration") then
@@ -46,17 +60,26 @@ function showUI()
 
     for delvePoiID, delveConfig in pairs(waypoints) do
         local delve = C_AreaPoiInfo.GetAreaPOIInfo(delveConfig["zone"], delvePoiID)
+		if delve == nil then
+			delve = C_AreaPoiInfo.GetAreaPOIInfo(delveConfig["zone"], tonumber(delvePoiID) - 1)
+		end
 		local storyVariant = GetStory(delve)
-		
-				
+		local areaName = areaIDs[delveConfig["zone"]]
         if delve ~= nil and delve["atlasName"] == "delves-bountiful" then
 		
-            local areaName = areaIDs[delveConfig["zone"]]
+
             local icon = C_UIWidgetManager.GetAllWidgetsBySetID(delve.iconWidgetSet)
             local isOvercharged = false
-			local dName = delve["name"]:gsub("^%s+", ""):gsub("%s+$", "")
-			local story_short = CleanStoryText(storyVariant)		
-			local tier = DelveStoryTiers[dName][story_short]
+			local dName = tostring(delvePoiID)
+			--local dName = delve["name"]:gsub("^%s+", ""):gsub("%s+$", "")
+			
+			local story_short = CleanStoryText(storyVariant)
+			--print(story_short)
+			--print (dName)
+			local tier = "?-Tier"
+			if dName ~= nil and story_short ~= nil then
+				tier = DelveStoryTiers[dName][story_short]
+			end
 
             if #icon == 2 then
                 isOvercharged = true
@@ -67,21 +90,13 @@ function showUI()
 			LegacyDelves[delvePoiID] = { ["name"] = delve["name"], ["zone"] = areaName, ["overcharged"] = isOvercharged, ["story"] = storyVariant, ["tier"] = tier }
 	    end
         end
-			
-    end
-	
-   for delveName, delveConfig in pairs(waypoints_all) do
- 
-            local areaName = areaIDs[delveConfig["zone"]]
-            local isOvercharged = false
-
-	    if delveConfig["zone"] > 2392 then
-            AllDelves[delveName] = { ["name"] = delveName, ["zone"] = areaName, ["overcharged"] = isOvercharged} --, ["story"] = storyVariant }
-			
-	    else 
-			AllLegacyDelves[delveName] = { ["name"] = delveName, ["zone"] = areaName, ["overcharged"] = isOvercharged, ["story"] = storyVariant }
-	    end
-			
+		if delve ~= nil then
+			if delveConfig["zone"] > 2392 then
+				AllDelves[delvePoiID] = { ["name"] = delve["name"], ["zone"] = areaName, ["overcharged"] = isOvercharged, ["TWW"] = false }
+			else
+				AllLegacyDelves[delvePoiID] = { ["name"] = delve["name"], ["zone"] = areaName, ["overcharged"] = isOvercharged, ["TWW"] = true }
+			end	
+		end
     end
 
     local function DrawDelvesGroup(container)
@@ -102,15 +117,15 @@ function showUI()
             end
 
             if cofferKeys.quantity == 1 then
-                cofferKeyCountLabel = "key"
+                cofferKeyCountLabel = LanguageBase[locale]["KeyOnChar"]
             else
-                cofferKeyCountLabel = "keys"
+                cofferKeyCountLabel = LanguageBase[locale]["KeysOnChar"]
             end
 
             local text = AceGUI:Create("InteractiveLabel")
             text:SetImage(cofferKeyIcon)
             text:SetImageSize(22, 22)
-            text:SetText(textColor .. cofferKeys.quantity .. "\124cffFFFFFF " .. cofferKeyCountLabel .. " on this character\124r")
+            text:SetText(textColor .. cofferKeys.quantity .. "\124cffFFFFFF " .. cofferKeyCountLabel )
             text:SetWidth(420)
             text:SetFont(GameFontHighlightLarge:GetFont())
             container:AddChild(text)
@@ -131,15 +146,15 @@ function showUI()
             end
 
             if weeklyShardsBalance == 1 then
-                cofferShardCountLabel = "shard"
+                cofferShardCountLabel = LanguageBase[locale]["shard"]
             else
-                cofferShardCountLabel = "shards"
+                cofferShardCountLabel = LanguageBase[locale]["shards"]
             end
 
             local text = AceGUI:Create("InteractiveLabel")
             text:SetImage(WeeklyShardsIcon)
             text:SetImageSize(22, 22)
-            text:SetText(textColor .. weeklyShardsBalance .. "\124cffFFFFFF " .. cofferShardCountLabel .. " of \124cff3088E0" .. weeklyShardsMax .."\124cffFFFFFF left to obtain from all sources")
+            text:SetText(textColor .. weeklyShardsBalance .. "\124cffFFFFFF " .. cofferShardCountLabel .. weeklyShardsMax ..LanguageBase[locale]["shardWeek"])
             text:SetWidth(420)
             text:SetFont(GameFontHighlightLarge:GetFont())
             container:AddChild(text)
@@ -162,14 +177,14 @@ function showUI()
             end
 
 	if keysToCreateCount == 1 then
-                cofferKeyCountLabel = "key"
+                cofferKeyCountLabel = LanguageBase[locale]["KeyOnChar2"]
             else
-                cofferKeyCountLabel = "keys"
+                cofferKeyCountLabel = LanguageBase[locale]["KeysOnChar2"]
             end
 	local text = AceGUI:Create("InteractiveLabel")
             text:SetImage(CofferKeyShardIcon)
             text:SetImageSize(22, 22)
-	    text:SetText(textColor .. keysToCreateCount .. "\124cffFFFFFF " .. cofferKeyCountLabel .. " available from \124cff3088E0" .. cofferKeyShardsCount.quantity .. "\124cffFFFFFF shards\124r")
+	    text:SetText(textColor .. keysToCreateCount .. "\124cffFFFFFF " .. cofferKeyCountLabel .. cofferKeyShardsCount.quantity .. LanguageBase[locale]["shards2"])
             text:SetWidth(420)
             text:SetFont(GameFontHighlightLarge:GetFont())
 	    container:AddChild(text)
@@ -184,7 +199,7 @@ function showUI()
 			local prog = AceGUI:Create("InteractiveLabel")
             prog:SetImage(JourneyIcon)
             prog:SetImageSize(22, 22)
-			prog:SetText(("|cffFFFFFFJourney Stage \124cff3088E0%d      \124cffFFFFFFCurrent Progress: \124cff3088E0%d \124cffFFFFFF/ %d |r"):format(progress.renownLevel, current, maxP))
+			prog:SetText((LanguageBase[locale]["Journey"]:format(progress.renownLevel, current, maxP)))
             prog:SetWidth(420)
             prog:SetFont(GameFontHighlightLarge:GetFont())
 			container:AddChild(prog)
@@ -192,7 +207,7 @@ function showUI()
             guiCreateNewline(container, 3)
 
             local button = AceGUI:Create("Button")
-            button:SetText("Great Vault")
+            button:SetText(LanguageBase[locale]["GV"])
             button:SetWidth(100)
             button:SetCallback("OnClick", function()
                 C_AddOns.LoadAddOn("Blizzard_WeeklyRewards")
@@ -202,7 +217,7 @@ function showUI()
             container:AddChild(button)
 
             local lfgbutton1 = AceGUI:Create("Button")
-            lfgbutton1:SetText("Start LFG")
+            lfgbutton1:SetText(LanguageBase[locale]["SLFG"])
             lfgbutton1:SetWidth(100)
 --			BDH_VoidStyleButton(lfgbutton1)
 			lfgbutton1:SetCallback("OnClick", function()
@@ -220,7 +235,7 @@ function showUI()
             end
 
             local lfgbutton2 = AceGUI:Create("Button")
-            lfgbutton2:SetText("Search LFG")
+            lfgbutton2:SetText(LanguageBase[locale]["FLFG"])
 			lfgbutton2:SetWidth(100)
             lfgbutton2:SetCallback("OnClick", function()
                 openFindGroupFrame("delves")
@@ -245,13 +260,13 @@ function showUI()
 
             if UnitLevel("player") < 68 then
                 local label = AceGUI:Create("Label")
-                label:SetText(getColorText("FF7E40", "  Delves unlock at Level 68"))
+                label:SetText(getColorText("FF7E40", LanguageBase[locale]["unlock"]))
                 label:SetFont(GameFontHighlightLarge:GetFont())
                 label:SetFullWidth(true)
                 container:AddChild(label)
             else
                 local label = AceGUI:Create("Label")
-                label:SetText(getColorText("FF7E40", "  There are currently no bountiful Delves available"))
+                label:SetText(getColorText("FF7E40", LanguageBase[locale]["noDelve"]))
                 label:SetFont(GameFontHighlightLarge:GetFont())
                 label:SetFullWidth(true)
                 container:AddChild(label)
@@ -270,7 +285,7 @@ function showUI()
             container:AddChild(label)
 
             local label = AceGUI:Create("Label")
-            label:SetText("Delve Name")
+            label:SetText(LanguageBase[locale]["dName"])
 			BDH_VoidStyleLabel(label, "dim")
             label:SetFont(GameFontHighlightSmall:GetFont())
             label:SetWidth(220)
@@ -284,7 +299,7 @@ function showUI()
             container:AddChild(label)
 
             local label = AceGUI:Create("Label")
-            label:SetText("Zone")
+            label:SetText(LanguageBase[locale]["Zone"])
 			BDH_VoidStyleLabel(label, "dim")
             label:SetFont(GameFontHighlightSmall:GetFont())
             label:SetWidth(100)
@@ -332,7 +347,7 @@ function showUI()
 
 
                 local button = AceGUI:Create("Button")
-                button:SetText("Waypoint")
+                button:SetText(LanguageBase[locale]["Wp"])
                 button:SetWidth(120)
                 button:SetCallback("OnClick", function()
                     setWaypoint("default", mapPoiID, delve["name"])
@@ -368,7 +383,7 @@ function showUI()
 		BDH_VoidStyleLabel(TWWHeader, "dim")
 		TWWHeader:SetFont(GameFontHighlightLarge:GetFont())
         TWWHeader:SetWidth(500)
-        if BountifulDelvesHunterDB.TWW == true then 
+        if BountifulDelvesHunterDB.TWW == true and next(LegacyDelves) ~= nil then 
 			container:AddChild(TWWHeader)
 		else
 			AceGUI:Release(TWWHeader)     
@@ -380,7 +395,7 @@ function showUI()
 			BDH_VoidStyleLabel(Linfo, "secondary")
 			Linfo:SetText("Please remember that these do not grant loot on current level")
 			Linfo:SetFont(GameFontHighlightMedium:GetFont())
-            if BountifulDelvesHunterDB.TWW == true then 
+            if BountifulDelvesHunterDB.TWW == true and next(LegacyDelves) ~= nil then 
 			container:AddChild(Linfo)
 			else
 			AceGUI:Release(Linfo)     
@@ -398,7 +413,7 @@ function showUI()
 			BDH_VoidStyleLabel(DName, "dim")
             DName:SetFont(GameFontHighlightSmall:GetFont())
             DName:SetWidth(220)
-			if BountifulDelvesHunterDB.TWW == true then 
+			if BountifulDelvesHunterDB.TWW == true and next(LegacyDelves) ~= nil then 
 			container:AddChild(DName)
 			else
 			AceGUI:Release(DName)     
@@ -410,7 +425,7 @@ function showUI()
 			BDH_VoidStyleLabel(DZone, "dim")
             DZone:SetFont(GameFontHighlightSmall:GetFont())
             DZone:SetWidth(120)
-            if BountifulDelvesHunterDB.TWW == true then 
+            if BountifulDelvesHunterDB.TWW == true and next(LegacyDelves) ~= nil then 
 			container:AddChild(DZone)
 			else
 			AceGUI:Release(DZone)     
@@ -440,7 +455,7 @@ function showUI()
                 LDelves:SetText(name)
                 LDelves:SetFont(GameFontHighlightMedium:GetFont())
                 LDelves:SetWidth(220)
-               	if BountifulDelvesHunterDB.TWW == true then 
+               	if BountifulDelvesHunterDB.TWW == true and next(LegacyDelves) ~= nil then 
 				container:AddChild(LDelves)
 				else
 				AceGUI:Release(LDelves)     
@@ -451,7 +466,7 @@ function showUI()
                 DelveZone:SetText(delve["zone"])
                 DelveZone:SetFont(GameFontHighlightMedium:GetFont())
                 DelveZone:SetWidth(120)
-				if BountifulDelvesHunterDB.TWW == true then 
+				if BountifulDelvesHunterDB.TWW == true and next(LegacyDelves) ~= nil then 
 				container:AddChild(DelveZone)
 				else
 				AceGUI:Release(DelveZone)     
@@ -464,7 +479,7 @@ function showUI()
                 WPbutton:SetCallback("OnClick", function()
                     setWaypoint("default", mapPoiID, delve["name"])
                 end)
-                if BountifulDelvesHunterDB.TWW == true then 
+                if BountifulDelvesHunterDB.TWW == true and next(LegacyDelves) ~= nil then 
 				container:AddChild(WPbutton)
 				else
 				AceGUI:Release(WPbutton)     
@@ -477,7 +492,7 @@ function showUI()
                 TTbutton:SetCallback("OnClick", function()
                     setWaypoint("tomtom", mapPoiID, delve["name"])
                 end)
-                if BountifulDelvesHunterDB.TWW == true then 
+                if BountifulDelvesHunterDB.TWW == true and next(LegacyDelves) ~= nil then 
 				container:AddChild(TTbutton)
 				if C_AddOns.IsAddOnLoaded("TomTom") == false then
                     TTbutton:SetDisabled(true)
@@ -512,13 +527,13 @@ function showUI()
 
             if UnitLevel("player") < 68 then
                 local label = AceGUI:Create("Label")
-                label:SetText(getColorText("FF7E40", "  Delves unlock at Level 68"))
+                label:SetText(getColorText("FF7E40", LanguageBase[locale]["unlock"]))
                 label:SetFont(GameFontHighlightLarge:GetFont())
                 label:SetFullWidth(true)
                 container:AddChild(label)
             else
                 local label = AceGUI:Create("Label")
-                label:SetText(getColorText("FF7E40", "  There are currently no Delves available"))
+                label:SetText(getColorText("FF7E40", LanguageBase[locale]["noDelve"]))
                 label:SetFont(GameFontHighlightLarge:GetFont())
                 label:SetFullWidth(true)
                 container:AddChild(label)
@@ -537,14 +552,14 @@ function showUI()
             container:AddChild(label)
 
             local label = AceGUI:Create("Label")
-            label:SetText("Delve Name")
+            label:SetText(LanguageBase[locale]["dName"])
 			BDH_VoidStyleLabel(label, "dim")
             label:SetFont(GameFontHighlightSmall:GetFont())
             label:SetWidth(220)
             container:AddChild(label)
 
             local label = AceGUI:Create("Label")
-            label:SetText("Zone")
+            label:SetText(LanguageBase[locale]["Zone"])
 			BDH_VoidStyleLabel(label, "dim")
             label:SetFont(GameFontHighlightSmall:GetFont())
             label:SetWidth(120)
@@ -573,8 +588,8 @@ function showUI()
                 label:SetText(name)
                 label:SetFont(GameFontHighlightMedium:GetFont())
                 label:SetWidth(220)
-                container:AddChild(label)
-
+				container:AddChild(label)
+	
                 local label = AceGUI:Create("Label")
                 label:SetText(delve["zone"])
                 label:SetFont(GameFontHighlightMedium:GetFont())
@@ -582,8 +597,8 @@ function showUI()
                 container:AddChild(label)
 
                 local button = AceGUI:Create("Button")
-                button:SetText("Waypoint")
-                button:SetWidth(120)
+                button:SetText(LanguageBase[locale]["Wp"])
+                button:SetWidth(120) 
                 button:SetCallback("OnClick", function()
                     setWaypointAll("default", mapPoiID, delve["name"])
                 end)
@@ -756,7 +771,7 @@ function showUI()
 
     -- Title
     local title = AceGUI:Create("Label")
-    title:SetText("\124cff3088E0World Quests rewarding Coffer Key Shards")
+    title:SetText(LanguageBase[locale]["WQTitle"])
     title:SetFont(GameFontHighlightLarge:GetFont())
     title:SetFullWidth(true)
     container:AddChild(title)
@@ -765,7 +780,7 @@ function showUI()
 
     -- Info
     local info = AceGUI:Create("Label")
-    info:SetText("WQs rewarding Coffer Key Shards. |cFF00DDFFRewards rotate – click Refresh.")
+    info:SetText(LanguageBase[locale]["WQSubTitle"])
     info:SetFullWidth(true)
     container:AddChild(info)
 
@@ -774,7 +789,7 @@ function showUI()
 
     -- Buttons: Refresh + Sort
     local refreshBtn = AceGUI:Create("Button")
-    refreshBtn:SetText("Refresh List")
+    refreshBtn:SetText(LanguageBase[locale]["RFresh"])
     refreshBtn:SetWidth(120)
     refreshBtn:SetCallback("OnClick", function()
         container:ReleaseChildren()
@@ -785,7 +800,7 @@ function showUI()
 
     local sortZoneBtn = AceGUI:Create("Button")
     sortZoneBtn:SetText(sortBy == "zone" and (sortDescending and "Zone ↑" or "Zone ↓") or "Zone")
-    sortZoneBtn:SetWidth(80)
+    sortZoneBtn:SetWidth(85)
     sortZoneBtn:SetCallback("OnClick", function()
         if sortBy == "zone" then
             sortDescending = not sortDescending
@@ -801,7 +816,7 @@ function showUI()
 
     local sortNameBtn = AceGUI:Create("Button")
     sortNameBtn:SetText(sortBy == "name" and (sortDescending and "Name ↑" or "Name ↓") or "Name")
-    sortNameBtn:SetWidth(80)
+    sortNameBtn:SetWidth(100)
 	
     sortNameBtn:SetCallback("OnClick", function()
         if sortBy == "name" then
@@ -838,34 +853,34 @@ function showUI()
 
     if #wqs.worldQuests == 0 then
         local none = AceGUI:Create("Label")
-        none:SetText("|cFFFF8040No active WQs with Coffer Key Shards as reward found.|r\nWait for daily refresh.")
+        none:SetText(LanguageBase[locale]["NoWQ"])
         none:SetFullWidth(true)
         container:AddChild(none)
     else
         -- Header
         local headerZone = AceGUI:Create("Label")
-        headerZone:SetText("Zone")
+        headerZone:SetText(LanguageBase[locale]["Zone"])
 		BDH_VoidStyleLabel(headerZone, "dim")
 		headerZone:SetFont(GameFontHighlightMedium:GetFont())
         headerZone:SetWidth(150)
         container:AddChild(headerZone)
 
         local headerName = AceGUI:Create("Label")
-        headerName:SetText("Quest Name")
+        headerName:SetText(LanguageBase[locale]["QName"])
 		BDH_VoidStyleLabel(headerName, "dim")
 		headerName:SetFont(GameFontHighlightMedium:GetFont())
         headerName:SetWidth(200)
         container:AddChild(headerName)
 
         local headerAmount = AceGUI:Create("Label")
-        headerAmount:SetText("Shards")
+        headerAmount:SetText(LanguageBase[locale]["Shards"])
 		BDH_VoidStyleLabel(headerAmount, "dim")
 		headerAmount:SetFont(GameFontHighlightMedium:GetFont())
         headerAmount:SetWidth(80)
         container:AddChild(headerAmount)
 
         local headerWP = AceGUI:Create("Label")
-        headerWP:SetText("Waypoints")
+        headerWP:SetText(LanguageBase[locale]["Wp"])
 		BDH_VoidStyleLabel(headerWP, "dim")
 		headerWP:SetFont(GameFontHighlightMedium:GetFont())
         headerWP:SetWidth(100)
@@ -908,7 +923,7 @@ function showUI()
             container:AddChild(amountLbl)
 
             local wpBtn = AceGUI:Create("Button")
-            wpBtn:SetText("Waipoint")
+            wpBtn:SetText(LanguageBase[locale]["Wp"])
             wpBtn:SetWidth(100)
             wpBtn:SetCallback("OnClick", function()
 			local x, y = C_TaskQuest.GetQuestLocation(wq.questID, wq.zoneID)        
@@ -938,14 +953,14 @@ function showUI()
 	end
 	if #wqs.specialAssignments == 0 then
         local noneSA = AceGUI:Create("Label")
-        noneSA:SetText("No active Special Assignment Quests.  You finished " .. finished .. " of 3 this week ")
+        noneSA:SetText(LanguageBase[locale]["No"] .. LanguageBase[locale]["SA"] .. finished .. LanguageBase[locale]["SA3"])
 		BDH_VoidStyleLabel(noneSA, "highlight")
 		noneSA:SetFont(GameFontHighlightMedium:GetFont())
         noneSA:SetFullWidth(true)
         container:AddChild(noneSA)
     else	
 		local specialA = AceGUI:Create("Label")
-        specialA:SetText("\124cff3088E0Special Assignments active. You finished " .. finished .. " of 3 this week ")
+        specialA:SetText(LanguageBase[locale]["SA"] .. finished .. LanguageBase[locale]["SA3"])
 		BDH_VoidStyleLabel(specialA, "dimmer")
 		specialA:SetFont(GameFontHighlightLarge:GetFont())
         specialA:SetWidth(500)
@@ -954,21 +969,21 @@ function showUI()
 		 guiCreateNewline(container, 5)
 		
 		local headerZone = AceGUI:Create("Label")
-        headerZone:SetText("Zone")
+        headerZone:SetText(LanguageBase[locale]["Zone"])
 		BDH_VoidStyleLabel(headerZone, "dim")
 		headerZone:SetFont(GameFontHighlightMedium:GetFont())
         headerZone:SetWidth(150)
         container:AddChild(headerZone)
 
         local headerName = AceGUI:Create("Label")
-        headerName:SetText("Quest Name")
+        headerName:SetText(LanguageBase[locale]["QName"])
 		BDH_VoidStyleLabel(headerName, "dim")
 		headerName:SetFont(GameFontHighlightMedium:GetFont())
         headerName:SetWidth(280)
         container:AddChild(headerName)
 
         local headerWP = AceGUI:Create("Label")
-        headerWP:SetText("Waypoints")
+        headerWP:SetText(LanguageBase[locale]["Wp"])
 		BDH_VoidStyleLabel(headerWP, "dim")
 		headerWP:SetFont(GameFontHighlightMedium:GetFont())
         headerWP:SetWidth(100)
@@ -1043,7 +1058,7 @@ function showUI()
 		guiCreateNewline(container, 3)
 		
 		local otherLbl = AceGUI:Create("Label")
-        otherLbl:SetText("\124cff3088E0Other Coffer Key Shard Sources")
+        otherLbl:SetText(LanguageBase[locale]["OtherSource"])
         otherLbl:SetWidth(500)
 		otherLbl:SetFont(GameFontHighlightLarge:GetFont())
         container:AddChild(otherLbl)
@@ -1051,14 +1066,14 @@ function showUI()
 		local haradarQ = Count_FinishedQuests(legendRelics);
 		local eversongQ = Count_FinishedQuests(saltherilsHaven);
 			if eversongQ > 0 then
-				everDone = "You have finished this already this week."
+				everDone = LanguageBase[locale]["Finished"]
 			else 
-				everDone = "You have not finished any this week."
+				everDone = LanguageBase[locale]["NotFinished"]
 			end
 		local preyQ = Count_FinishedQuests(preyQuests)
 		
 		local haradarQLbl = AceGUI:Create("Label")
-        haradarQLbl:SetText("Haradar's Legend Relics quests. 100 each. You have finished |cffFFFFFF" .. haradarQ .. "|r of 7 quests.\nSaltheril's Haven weekly quest. 100 each. |cffFFFFFF" .. everDone .. "|r\nPrey Quests award 75 each. You have done |cffFFFFFF" .. preyQ .. "|r of 8 quests this week.\nWorld Map Rares award 50 each.\nWorld Map Treasures (Forgotten Amani Cache, etc.) 3-15 each. \nPreyseeker's Coffer Key Shard Satchels 50,60 or 80 depending on quality.\nBlue Fly-through stars may award 1-3")
+        haradarQLbl:SetText(LanguageBase[locale]["OtherText1"] .. haradarQ .. LanguageBase[locale]["OtherText2"] .. everDone .. LanguageBase[locale]["OtherText3"] .. preyQ .. LanguageBase[locale]["OtherText4"])
         haradarQLbl:SetWidth(600)
 		BDH_VoidStyleLabel(haradarQLbl, "dim")
 		haradarQLbl:SetFont(GameFontHighlightMedium:GetFont())
@@ -1071,6 +1086,9 @@ function showUI()
 
 
     function DrawTiersOverviewGroup(container)
+	local THBitemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice = GetItemInfo(265714)
+	local BitemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice = GetItemInfo(253342)
+	
         guiCreateNewline(container, 3)
 
         local label = AceGUI:Create("Label")
@@ -1097,7 +1115,7 @@ function showUI()
         guiCreateNewline(container)
 
         local label = AceGUI:Create("Label")
-        label:SetText("Recommended Gear")
+        label:SetText(LanguageBase[locale]["RGear"])
 		BDH_VoidStyleLabel(label, "dim")
         label:SetFont(GameFontHighlightMedium:GetFont())
         label:SetWidth(160)
@@ -1115,7 +1133,7 @@ function showUI()
         guiCreateNewline(container)
 
         local label = AceGUI:Create("Label")
-        label:SetText("Bountiful Loot")
+        label:SetText(LanguageBase[locale]["BLoot"])
 		BDH_VoidStyleLabel(label, "secondary")
         label:SetFont(GameFontHighlightMedium:GetFont())
         label:SetWidth(160)
@@ -1135,7 +1153,7 @@ function showUI()
         guiCreateNewline(container)
 
         local label = AceGUI:Create("Label")
-        label:SetText("Great Vault")
+        label:SetText(LanguageBase[locale]["GV"])
 		BDH_VoidStyleLabel(label, "highlight")
         label:SetFont(GameFontHighlightMedium:GetFont())
         label:SetWidth(160)
@@ -1153,13 +1171,13 @@ function showUI()
         guiCreateNewline(container, 15)
 	
         local nemesisLbl = AceGUI:Create("Label")
-        nemesisLbl:SetText("\124cff3088E0Seasonal Nemesis")
+        nemesisLbl:SetText(LanguageBase[locale]["Nemesis"])
         nemesisLbl:SetFont(GameFontHighlightLarge:GetFont())
         nemesisLbl:SetWidth(300)
         container:AddChild(nemesisLbl)
 		
 		local nemesisLbl = AceGUI:Create("Label")
-        nemesisLbl:SetText("Zone")
+        nemesisLbl:SetText(LanguageBase[locale]["Zone"])
         nemesisLbl:SetFont(GameFontHighlightLarge:GetFont())
         nemesisLbl:SetWidth(200)
         container:AddChild(nemesisLbl)
@@ -1182,10 +1200,10 @@ function showUI()
 		
 		nemesisQ = C_QuestLog.IsQuestFlaggedCompleted(93525)
 		nemesisInLog = C_QuestLog.IsOnQuest(93525) 
-		if nemesisQ then qText = "You have finished the associated Quest 'Nulling Nullaeus'. "
+		if nemesisQ then qText = LanguageBase[locale]["QDone"]
 		elseif nemesisInLog then 
-				qText = "You have the associated Quest in your Quest Log."
-		else qText = "You have not done the associated Quest and can grab it at the Delvers HQ in Silvermoon, if you are eligible."
+				qText = LanguageBase[locale]["QLog"]
+		else qText = LanguageBase[locale]["QNot"]
 		end
 		
 		local nullaeussLbl = AceGUI:Create("Label")
@@ -1213,7 +1231,7 @@ function showUI()
 		local x, y = 61.2, 71.6
 		local nmZone = 2405
 		local nmBtn = AceGUI:Create("Button")
-            nmBtn:SetText("Waipoint")
+            nmBtn:SetText(LanguageBase[locale]["Wp"])
             nmBtn:SetWidth(100)
             nmBtn:SetCallback("OnClick", function()
             setWaypointFromXY("default", nmZone, x , y , "Torment's Rise")
@@ -1231,8 +1249,13 @@ function showUI()
                     ttBtn:SetDisabled(true)
 				end	
 		guiCreateNewline(container, 5)
+				
 		local TroveLbl = AceGUI:Create("Label")
-        TroveLbl:SetText("\124cff3088E0Trovehunter's Bounty")
+		if THBitemName ~= nil then
+        TroveLbl:SetText("\124cff3088E0" .. THBitemName)
+		else
+		TroveLbl:SetText("\124cff3088E0 Trovehunter'*s Bounty")
+		end
         TroveLbl:SetFont(GameFontHighlightLarge:GetFont())
         TroveLbl:SetWidth(300)
         container:AddChild(TroveLbl)
@@ -1244,7 +1267,7 @@ function showUI()
 		container:AddChild(row2)
 		
 		local mapID = 252415
-		local mapItemId = 265714
+		--local mapItemId = 265714
 		local mapIcon = 1064187
         local delverBountyIcon = AceGUI:Create("Icon")
 		delverBountyIcon:SetImage(mapIcon)
@@ -1255,20 +1278,21 @@ function showUI()
 		delverBountyIcon.frame:SetPoint("TOPLEFT", row2.content, "TOPLEFT", 0, 0)
 		delverBountyIcon:SetCallback("OnEnter", function(widget)
 					GameTooltip:SetOwner(widget.frame, "ANCHOR_TOPRIGHT")
-					GameTooltip:SetHyperlink("item:" .. mapItemId)
+					GameTooltip:SetHyperlink("item:" .. TROVEHUNTER_BOUNTY_ITEMID)
 					GameTooltip:Show()
             end)
             delverBountyIcon:SetCallback("OnLeave", function() GameTooltip:Hide() end)
 			
 		delverBountyQ = C_QuestLog.IsQuestFlaggedCompleted(86371)
-		delverBountyinBag = C_Item.GetItemCount(mapID) 
+		delverBountyinBag = PlayerHasBounty() --C_Item.GetItemCount(mapID) 
 		delverBountyActive = C_UnitAuras.GetPlayerAuraBySpellID(1254631)
-		if delverBountyQ then qText = "You have looted a Trovehunter's Bounty this week"
-		else qText = "You can still get a Trovehunter's Bounty from any source this week."
+		if delverBountyQ then qText = THBitemName .. LanguageBase[locale]["THBLooted"]
+
+		else qText = itemName .. LanguageBase[locale]["THBNotLooted"]
 		end
-		if delverBountyinBag == 1 and not delverBountyActive then 
-				qText = qText .."\nYou have a Trovehunter's Bounty in Bag, don't forget to use it"
-		elseif delverBountyActive then qText = qText .. "\nYour Trovehunter's Bounty is active. Happy looting!"
+		if delverBountyinBag and not delverBountyActive then 
+				qText = qText .. THBitemName .. LanguageBase[locale]["THBBag"]
+		elseif delverBountyActive then qText = qText .. THBitemName .. LanguageBase[locale]["THBActive"]
 		end
 		
 		local delverBountyLbl = AceGUI:Create("Label")
@@ -1282,7 +1306,7 @@ function showUI()
 		
 		guiCreateNewline(container, 5)
 		local beaconHeadLbl = AceGUI:Create("Label")
-        beaconHeadLbl:SetText("\124cff3088E0Beacon of Hope")
+        beaconHeadLbl:SetText("\124cff3088E0" .. BitemName)
         beaconHeadLbl:SetFont(GameFontHighlightLarge:GetFont())
         beaconHeadLbl:SetWidth(300)
         container:AddChild(beaconHeadLbl)
@@ -1312,9 +1336,9 @@ function showUI()
 		beaconPrice = 5000
 		beaconinBag = C_Item.GetItemCount(beaconId, includeBank) 
 		underCoin = C_CurrencyInfo.GetCurrencyInfo(2803)
-		if beaconinBag > 0 then qText = "You have a Beacon of Hope in your bags. Go get that Nemesis!"
-		elseif underCoin.quantity < 5000 then qText = "No Beacon of Hope in your backpack or bank and insufficient funds to buy one. \n(|cffE02E2E" .. underCoin.quantity .. "|r of |cffFFFFFF" .. beaconPrice .. ")"
-		else qText = "No Beacon of Hope in your backpack or bank, but you got enough Undercoins to buy one. \n(" .. underCoin.quantity .. " of |cffFFFFFF" .. beaconPrice .. ")"
+		if beaconinBag > 0 then qText = BitemName .. LanguageBase[locale]["BeaconInBag"]
+		elseif underCoin.quantity < 5000 then qText = LanguageBase[locale]["No"] .. BitemName .. LanguageBase[locale]["BeaconNoNo"] .. underCoin.quantity .. "|r / |cffFFFFFF" .. beaconPrice .. ")"
+		else qText = LanguageBase[locale]["No"] .. BitemName .. LanguageBase[locale]["BeaconNoYes"] .. underCoin.quantity .. " / |cffFFFFFF" .. beaconPrice .. ")"
 		end
 		
 		local beaconLbl = AceGUI:Create("Label")
@@ -1344,8 +1368,8 @@ function showUI()
 
     BountifulDelvesHunterMainFrame = AceGUI:Create("Frame")
 	BountifulDelvesHunterMainFrame:EnableResize(false)
-	BountifulDelvesHunterMainFrame:SetTitle("\124cff3088ffBountiful Delves Hunter Midnight")
-	BountifulDelvesHunterMainFrame:SetStatusText("\124cff3088ffBountiful Delves Hunter Midnight - " .. version)
+	BountifulDelvesHunterMainFrame:SetTitle(LanguageBase[locale]["Title"])
+	BountifulDelvesHunterMainFrame:SetStatusText(LanguageBase[locale]["Title"] .. " - " .. version)
 	BDH_VoidStyleFrame(BountifulDelvesHunterMainFrame, "darkest")
 	BountifulDelvesHunterMainFrame:SetCallback("OnClose", function(widget)
     isFrameVisible = false
@@ -1375,59 +1399,58 @@ function showUI()
 	setBackdropBorderColor(tab.frame, VOID_THEME.border_void)
     tab:SetLayout("Flow")
     tab:SetTabs({
-        { text = "\124cff3088ffBountiful Delves", 	value = "tab1" },
-        { text = "\124cff3088ffTiers Overview",   	value = "tab2" },
-        { text = "\124cff3088ffCoffer Shards WQs",	value = "tab4" },
-		{ text = "\124cff3088ffAll Delve Waypoints",value = "tab5" },	
-        { text = "\124cff3088ffOptions",         	value = "tab3" }
+        { text = LanguageBase[locale]["Unselect1"],	value = "tab1" },
+        { text = LanguageBase[locale]["Unselect2"], value = "tab2" },
+        { text = LanguageBase[locale]["Unselect3"],	value = "tab4" },
+		{ text = LanguageBase[locale]["Unselect4"], value = "tab5" },	
+        { text = LanguageBase[locale]["Unselect5"], value = "tab3" }
     })
     tab:SetCallback("OnGroupSelected", function(container, event, group)
         container:ReleaseChildren()
         if group == "tab1" then
             DrawDelvesGroup(container)
 			tab:SetTabs({
-        { text = "Bountiful Delves", value = "tab1" },
-        { text = "\124cff3088ffTiers and Info",   value = "tab2" },
-        { text = "\124cff3088ffCoffer Shards WQs",value = "tab4" },   
- 		{ text = "\124cff3088ffAll Delve Waypoints",value = "tab5" },
-		{ text = "\124cff3088ffOptions",          value = "tab3" }
+        { text = LanguageBase[locale]["Select1"], value = "tab1" },
+        { text = LanguageBase[locale]["Unselect2"], value = "tab2" },
+        { text = LanguageBase[locale]["Unselect3"], value = "tab4" },   
+ 		{ text = LanguageBase[locale]["Unselect4"], value = "tab5" },
+		{ text = LanguageBase[locale]["Unselect5"], value = "tab3" }
     })	
         elseif group == "tab2" then
             DrawTiersOverviewGroup(container)
 			tab:SetTabs({
-        { text = "\124cff3088ffBountiful Delves", value = "tab1" },
-        { text = "Tiers and Info",   value = "tab2" },
-        { text = "\124cff3088ffCoffer Shards WQs",value = "tab4" },
-		{ text = "\124cff3088ffAll Delve Waypoints",value = "tab5" },	
-        { text = "\124cff3088ffOptions",          value = "tab3" }
+        { text = LanguageBase[locale]["Unselect1"], value = "tab1" },
+        { text = LanguageBase[locale]["Select2"], value = "tab2" },
+        { text = LanguageBase[locale]["Unselect3"], value = "tab4" },   
+ 		{ text = LanguageBase[locale]["Unselect4"], value = "tab5" },
+		{ text = LanguageBase[locale]["Unselect5"], value = "tab3" }
 		})
         elseif group == "tab4" then
             DrawCofferShardsWQGroup(container)
 			tab:SetTabs({
-        { text = "\124cff3088ffBountiful Delves", value = "tab1" },
-        { text = "\124cff3088ffTiers and Info",   value = "tab2" },
-        { text = "Coffer Shards WQs",value = "tab4" },   
-		{ text = "\124cff3088ffAll Delve Waypoints",value = "tab5" },
-        { text = "\124cff3088ffOptions",          value = "tab3" }
+        { text = LanguageBase[locale]["Unselect1"], value = "tab1" },
+        { text = LanguageBase[locale]["Unselect2"], value = "tab2" },
+        { text = LanguageBase[locale]["Select3"], value = "tab4" },   
+ 		{ text = LanguageBase[locale]["Unselect4"], value = "tab5" },
+		{ text = LanguageBase[locale]["Unselect5"], value = "tab3" }
 		})
         elseif group == "tab3" then
             DrawOptionsOverviewGroup(container)
 			tab:SetTabs({
-        { text = "\124cff3088ffBountiful Delves", value = "tab1" },
-        { text = "\124cff3088ffTiers and Info",   value = "tab2" },
-        { text = "\124cff3088ffCoffer Shards WQs",value = "tab4" },   
-		{ text = "\124cff3088ffAll Delve Waypoints",value = "tab5" },
-        { text = "Options",          value = "tab3" }
+        { text = LanguageBase[locale]["Unselect1"], value = "tab1" },
+        { text = LanguageBase[locale]["Unselect2"], value = "tab2" },
+        { text = LanguageBase[locale]["Unselect3"], value = "tab4" },   
+ 		{ text = LanguageBase[locale]["Unselect4"], value = "tab5" },
+		{ text = LanguageBase[locale]["Select5"], value = "tab3" }
 		})	
 		elseif group == "tab5" then
             DrawAllDelvesGroup(container)
 			tab:SetTabs({
-        { text = "\124cff3088ffBountiful Delves", value = "tab1" },
-        { text = "\124cff3088ffTiers and Info",   value = "tab2" },
-        { text = "\124cff3088ffCoffer Shards WQs",value = "tab4" },
-		{ text = "All Delve Waypoints",           value = "tab5" },
-        { text = "\124cff3088ffOptions",          value = "tab3" }
-		})	
+        { text = LanguageBase[locale]["Unselect1"], value = "tab1" },
+        { text = LanguageBase[locale]["Unselect2"], value = "tab2" },
+        { text = LanguageBase[locale]["Unselect3"], value = "tab4" },   
+ 		{ text = LanguageBase[locale]["Select4"], value = "tab5" },
+		{ text = LanguageBase[locale]["Unselect5"], value = "tab3" }		})	
         end
     end)
     tab:SelectTab("tab4")
@@ -1443,7 +1466,7 @@ function DrawOptionsOverviewGroup(container)
     guiCreateNewline(container, 3)
 
     local button = AceGUI:Create("Button")
-    button:SetText("Toggle Minimap Button")
+    button:SetText(LanguageBase[locale]["MiniMap"])
     button:SetWidth(250)
     button:SetCallback("OnClick", function()
         if BountifulDelvesHunterIconDB.hide == true then
@@ -1459,7 +1482,7 @@ function DrawOptionsOverviewGroup(container)
 	guiCreateNewline(container, 3)
 	
 	    local button = AceGUI:Create("Button")
-    button:SetText("Toggle TWW Delves")
+    button:SetText(LanguageBase[locale]["ToggleLegacy"])
     button:SetWidth(250)
     button:SetCallback("OnClick", function()
         if BountifulDelvesHunterDB.TWW == true then
@@ -1467,18 +1490,44 @@ function DrawOptionsOverviewGroup(container)
 		   BountifulDelvesHunterMainFrame:SetHeight(700)
         else
             BountifulDelvesHunterDB.TWW = true
-			BountifulDelvesHunterMainFrame:SetHeight(1000)
+			BountifulDelvesHunterMainFrame:SetHeight(1100)
         end
     end)
     container:AddChild(button)
 	
 	guiCreateNewline(container, 3)
 	
+	local dropdown = AceGUI:Create("Dropdown")
+		dropdown:SetLabel(LanguageBase[locale]["ChLang"])
+		dropdown:SetList(dropDownOptionen)
+		dropdown:SetWidth(150)
+		dropdown:SetValue(BountifulDelvesHunterDB.locale) 
+		dropdown:SetCallback("OnValueChanged", function(widget, event, key)
+			if key == "follow" and dropDownOptionen[GetLocale()] then
+				BountifulDelvesHunterDB.locale = GetLocale()
+			else
+				BountifulDelvesHunterDB.locale = key
+			end
+
+		end)	
+		container:AddChild(dropdown)
+		
+		guiCreateNewline(container, 3)
+	
+	local reminder = AceGUI:Create("Label")
+        reminder:SetText(LanguageBase[locale]["remind"])
+		BDH_VoidStyleLabel(label, "dim")
+        reminder:SetFont(GameFontHighlightSmall:GetFont())
+        reminder:SetWidth(600)
+        container:AddChild(reminder)
+	
+		guiCreateNewline(container, 8)
+	
 	 local label = AceGUI:Create("Label")
-        label:SetText("This Addon is based on the original Bountiful Delves Helper by Menelitos. I loved that Addon and used it all the time, but at some point, it was no longer updated. I kept it current with line by line changes in TWW and Pre-Patch, but that was obviously not an option for Midnight. \nKudos to Menelitos for the original idea and general feel of the addon. \n\nI tried to add a little Midnight flavor to this with the color theme, hope you like it. \n\n* Tier List according to wowhead.com where S-Tier is fastest/easiest and F-Tier slowest/hardest. Visit their page for more great info on the delves.")
+        label:SetText(LanguageBase[locale]["OptionText"])
 		BDH_VoidStyleLabel(label, "dimmer")
         label:SetFont(GameFontHighlightMedium:GetFont())
-        label:SetWidth(600)
+        label:SetFullWidth(true)
         container:AddChild(label)
 	
 
@@ -1501,10 +1550,10 @@ end
 SlashCmdList["BDH"] = function(arg1)
     if arg1 == "hide" and BountifulDelvesHunterIconDB["hide"] == false or BountifulDelvesHunterIconDB["hide"] == nil then
         BountifulDelvesHunterIconDB["hide"] = true
-        print("[Bountiful Delves Hunter] Minimap icon hidden, use /reload for it to take effect.")
+        print(LanguageBase[locale]["MiniHidden"])
     elseif arg1 == "show" and BountifulDelvesHunterIconDB["hide"] == true then
         BountifulDelvesHunterIconDB["hide"] = false
-        print("[Bountiful Delves Hunter] Minimap icon shown, use /reload for it to take effect.")
+        print(LanguageBase[locale]["MiniShown"])
     elseif arg1 == "" then
         if not isFrameVisible then
             showUI()
@@ -1524,6 +1573,35 @@ local function eventHandler(self, event, arg1)
         end
     end
 end
+
+frame:SetScript("OnEvent", function(self, event)
+
+    if event == "ZONE_CHANGED_NEW_AREA" then
+        popupShown = false
+		C_Timer.After(2, function() end)
+local a = IsInDelve()
+local b = PlayerHasBounty()
+--print (a)
+--print (b)
+        if IsInDelve() and PlayerHasBounty() then
+            TryShowPopup()
+        end
+
+    elseif event == "UPDATE_UI_WIDGET" then
+
+        CheckCheckpointWidget()
+
+
+    elseif event == "PLAYER_REGEN_ENABLED" then
+
+        if pendingPopup then
+            pendingPopup = false
+            TryShowPopup()
+        end
+
+    end
+
+end)
 
 eventListenerFrame:SetScript("OnEvent", eventHandler)
 eventListenerFrame:RegisterEvent("GOSSIP_SHOW")
