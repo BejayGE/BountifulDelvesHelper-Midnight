@@ -172,7 +172,6 @@ function CleanStoryText(text)
     return text
 end
 
-
 function Count_FinishedQuests (allQ)
 
 	local count = 0
@@ -185,6 +184,145 @@ function Count_FinishedQuests (allQ)
 	return count
 end
 
+function PlayerHasBounty()
+local TROVEHUNTER_BOUNTY_ITEMID = 252415
+
+    for bag = 0, NUM_BAG_SLOTS do
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+
+            local itemID = C_Container.GetContainerItemID(bag, slot)
+
+            if itemID == TROVEHUNTER_BOUNTY_ITEMID then
+                return true
+            end
+
+        end
+    end
+
+    return false
+end
+
+function IsInDelve()
+    local mapID = C_Map.GetBestMapForUnit("player")
+    if mapID and C_DelvesUI and C_DelvesUI.HasActiveDelve then
+		return C_DelvesUI.HasActiveDelve(mapID)
+	end
+    return false
+end
+
+function CheckCheckpointWidget()
+
+    if not IsInDelve() or not PlayerHasBounty() then
+        return
+    end
+
+    local widgetSetID = C_UIWidgetManager.GetObjectiveTrackerWidgetSetID()
+
+    local widgets = C_UIWidgetManager.GetAllWidgetsBySetID(widgetSetID)
+
+    if not widgets then
+        return
+    end
+
+    for _, widget in ipairs(widgets) do
+
+        if widget.widgetType == Enum.UIWidgetVisualizationType.TextWithState then
+
+            local info = C_UIWidgetManager.GetTextWithStateWidgetVisualizationInfo(widget.widgetID)
+
+            if info and info.state == 1 then
+                -- state 1 = active
+                TryShowPopup()
+                return
+            end
+
+        end
+    end
+
+end
+
+function CreateToast()
+
+    if toastFrame then
+        return toastFrame
+    end
+
+    local f = CreateFrame("Frame", "TrovehunterToast", UIParent, "BackdropTemplate")
+    f:SetSize(380, 100)
+    f:SetPoint("TOP", UIParent, "TOP", 0, -220)
+
+    f.bg = f:CreateTexture(nil, "BACKGROUND")
+	f.bg:SetAtlas("lootToast-bg")
+	f.bg:SetPoint("CENTER")
+	f.bg:SetSize(420, 80)
+
+    f:Hide()
+
+    -- Icon
+    f.icon = f:CreateTexture(nil, "ARTWORK")
+    f.icon:SetSize(48,48)
+    f.icon:SetPoint("LEFT", 16, 0)
+
+    -- Text
+    f.text = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    f.text:SetPoint("LEFT", f.icon, "RIGHT", 16, 0)
+    f.text:SetJustifyH("LEFT")
+	
+
+    -- Glow
+f.glow = f:CreateTexture(nil, "ARTWORK")
+f.glow:SetAtlas("lootToast-glow")
+f.glow:SetPoint("CENTER")
+f.glow:SetSize(460, 140)
+f.glow:SetAlpha(0.9)
+
+    toastFrame = f
+    return f
+end
+
+function ShowBountyToast()
+local TROVEHUNTER_BOUNTY_ITEMID = 265714
+    local frame = CreateToast()
+    local name, link, _, _, _, _, _, _, _, icon = GetItemInfo(TROVEHUNTER_BOUNTY_ITEMID)
+
+    frame.icon:SetTexture(icon or 134400)
+
+    frame.text:SetText(LanguageBase[BountifulDelvesHunterDB.locale]["Toast"])
+
+    frame:SetAlpha(0)
+    frame:Show()
+
+	C_Sound.PlaySound(31578)
+
+    UIFrameFadeIn(frame, 0.4, 0, 1)
+
+    C_Timer.After(6, function()
+        UIFrameFadeOut(frame, 0.6, 1, 0)
+    end)
+
+end
+
+function TryShowPopup()
+
+    if popupShown then
+     --   return
+    end
+
+    if not PlayerHasBounty() then
+        return
+    end
+
+    if InCombatLockdown() then
+        pendingPopup = true
+        return
+    end
+
+    popupShown = true
+    ShowBountyToast()
+
+end
+
+-- Void Theme
 local function BDH_ApplyVoidBackdrop(frame, bg, border)
     if not frame then return end
 
