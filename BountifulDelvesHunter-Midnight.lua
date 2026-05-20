@@ -8,7 +8,8 @@ if not BountifulDelvesHunterDB then
         highestDelveTier = nil,
         waypointSystem = "default",
 		TWW = false,
-		locale = "enUS"
+		locale = "enUS",
+		reminder_restoration = true
     }
 end
 
@@ -37,10 +38,13 @@ local toastFrame
 	frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	frame:RegisterEvent("UPDATE_UI_WIDGET")
 	frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+	frame:RegisterEvent("DISPLAY_EVENT_TOAST_LINK")
+	frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 	
 	local popupShown = false
 	local pendingPopup = false
-
+	local hasActivatedStone = false
+	
 AceGUI = LibStub("AceGUI-3.0")
 isFrameVisible = false
 BountifulDelvesHunterMainFrame = {}
@@ -1466,31 +1470,76 @@ function DrawOptionsOverviewGroup(container)
     guiCreateNewline(container, 3)
 
     local button = AceGUI:Create("Button")
-    button:SetText(LanguageBase[locale]["MiniMap"])
+	local function UpdateButtonText()
+		if BountifulDelvesHunterIconDB.hide == false then 
+		button:SetText(LanguageBase[locale]["MiniMap"] .. " " .. LanguageBase[locale]["on"])
+		else 
+		button:SetText(LanguageBase[locale]["MiniMap"] .. " " .. LanguageBase[locale]["off"])
+		end
+	end
+	
+UpdateButtonText()
     button:SetWidth(250)
     button:SetCallback("OnClick", function()
         if BountifulDelvesHunterIconDB.hide == true then
             BountifulDelvesHunterMinimapButton:Show("BountifulDelvesHunter")
             BountifulDelvesHunterIconDB.hide = false
+			UpdateButtonText()
         else
             BountifulDelvesHunterMinimapButton:Hide("BountifulDelvesHunter")
             BountifulDelvesHunterIconDB.hide = true
+			UpdateButtonText()
+        end
+    end)
+    container:AddChild(button)
+	
+--	guiCreateNewline(container, 3)
+	
+	local button = AceGUI:Create("Button")
+	local function UpdateButtonText()
+		if BountifulDelvesHunterDB.TWW == false then 
+		button:SetText(LanguageBase[locale]["ToggleLegacy"] .. " " .. LanguageBase[locale]["off"])		
+		else 
+		button:SetText(LanguageBase[locale]["ToggleLegacy"] .. " " .. LanguageBase[locale]["on"])		
+		end
+	end
+	
+	UpdateButtonText()		
+    button:SetWidth(250)
+    button:SetCallback("OnClick", function()
+        if BountifulDelvesHunterDB.TWW == true then
+           BountifulDelvesHunterDB.TWW = false
+		   BountifulDelvesHunterMainFrame:SetHeight(700)
+		   UpdateButtonText()
+        else
+            BountifulDelvesHunterDB.TWW = true
+			BountifulDelvesHunterMainFrame:SetHeight(1100)
+			UpdateButtonText()
         end
     end)
     container:AddChild(button)
 	
 	guiCreateNewline(container, 3)
 	
-	    local button = AceGUI:Create("Button")
-    button:SetText(LanguageBase[locale]["ToggleLegacy"])
+	local button = AceGUI:Create("Button")
+	local function UpdateButtonText()
+		if BountifulDelvesHunterDB.reminder_restoration == false then 
+        button:SetText(LanguageBase[locale]["Restoration_Warning"] .. " " .. LanguageBase[locale]["off"])
+		else 
+        button:SetText(LanguageBase[locale]["Restoration_Warning"] .. " " .. LanguageBase[locale]["on"])
+		end
+	end
+
+	UpdateButtonText()
+    
     button:SetWidth(250)
     button:SetCallback("OnClick", function()
-        if BountifulDelvesHunterDB.TWW == true then
-           BountifulDelvesHunterDB.TWW = false
-		   BountifulDelvesHunterMainFrame:SetHeight(700)
+        if BountifulDelvesHunterDB.reminder_restoration == true then
+           BountifulDelvesHunterDB.reminder_restoration = false	
+			UpdateButtonText()
         else
-            BountifulDelvesHunterDB.TWW = true
-			BountifulDelvesHunterMainFrame:SetHeight(1100)
+            BountifulDelvesHunterDB.reminder_restoration = true
+			UpdateButtonText()
         end
     end)
     container:AddChild(button)
@@ -1574,11 +1623,22 @@ local function eventHandler(self, event, arg1)
     end
 end
 
-frame:SetScript("OnEvent", function(self, event)
+local hasActivatedStone = false
 
+local function OnRestorationStoneReached()
+    -- Your custom logic goes here
+    print("Empowered Restoration Stone reached! Life added, spawn point updated.")
+    
+    -- Insert your WeakAura trigger, audio alert, or UI pop-up code here
+end
+
+
+
+frame:SetScript("OnEvent", function(self, event, ...)
+    	
     if event == "ZONE_CHANGED_NEW_AREA" then
         popupShown = false
-		C_Timer.After(2, function() end)
+		C_Timer.After(5, function() end)
 local a = IsInDelve()
 local b = PlayerHasBounty()
 --print (a)
@@ -1587,20 +1647,20 @@ local b = PlayerHasBounty()
             TryShowPopup()
         end
 
-    elseif event == "UPDATE_UI_WIDGET" then
-
-        CheckCheckpointWidget()
-
-
     elseif event == "PLAYER_REGEN_ENABLED" then
 
         if pendingPopup then
             pendingPopup = false
             TryShowPopup()
         end
-
+		        
+    elseif event == "DISPLAY_EVENT_TOAST_LINK" then
+        
+        local toastText = ...   
+        if toastText and string.find(toastText, "Respawn Point") or string.find(toastText, "Wiederbelebungspunkt") or string.find(toastText, "Point d’apparition") or string.find(toastText, "Punto de reaparición") or string.find(toastText, "Punto di Ricomparsa") or string.find(toastText, "Ponto de Reaparecimento") and PlayerHasBounty and BountifulDelvesHunterDB.reminder_restoration then  
+            TryShowPopup()
+        end
     end
-
 end)
 
 eventListenerFrame:SetScript("OnEvent", eventHandler)
