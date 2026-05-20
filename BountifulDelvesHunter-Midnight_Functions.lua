@@ -203,42 +203,19 @@ local TROVEHUNTER_BOUNTY_ITEMID = 252415
 end
 
 function IsInDelve()
-    local mapID = C_Map.GetBestMapForUnit("player")
-    if mapID and C_DelvesUI and C_DelvesUI.HasActiveDelve then
-		return C_DelvesUI.HasActiveDelve(mapID)
-	end
-    return false
-end
 
-function CheckCheckpointWidget()
-
-    if not IsInDelve() or not PlayerHasBounty() then
-        return
+    if C_PartyInfo and C_PartyInfo.IsDelveInProgress and C_PartyInfo.IsDelveInProgress() then
+        return true
     end
-
-    local widgetSetID = C_UIWidgetManager.GetObjectiveTrackerWidgetSetID()
-
-    local widgets = C_UIWidgetManager.GetAllWidgetsBySetID(widgetSetID)
-
-    if not widgets then
-        return
-    end
-
-    for _, widget in ipairs(widgets) do
-
-        if widget.widgetType == Enum.UIWidgetVisualizationType.TextWithState then
-
-            local info = C_UIWidgetManager.GetTextWithStateWidgetVisualizationInfo(widget.widgetID)
-
-            if info and info.state == 1 then
-                -- state 1 = active
-                TryShowPopup()
-                return
-            end
-
+    
+    if C_Scenario and C_Scenario.GetInfo then
+        local scenarioInfo = C_Scenario.GetInfo()
+        if scenarioInfo and scenarioInfo.type == Enum.ScenarioType.Delves then  
+            return true
         end
     end
-
+    
+    return false
 end
 
 function CreateToast()
@@ -282,12 +259,13 @@ end
 
 function ShowBountyToast()
 local TROVEHUNTER_BOUNTY_ITEMID = 265714
+local locale = BountifulDelvesHunterDB.locale or "enUS" 
     local frame = CreateToast()
     local name, link, _, _, _, _, _, _, _, icon = GetItemInfo(TROVEHUNTER_BOUNTY_ITEMID)
 
     frame.icon:SetTexture(icon or 134400)
 
-    frame.text:SetText(LanguageBase[BountifulDelvesHunterDB.locale]["Toast"])
+    frame.text:SetText(LanguageBase[locale]["Toast"])
 
     frame:SetAlpha(0)
     frame:Show()
@@ -307,7 +285,9 @@ function TryShowPopup()
     if popupShown then
      --   return
     end
-
+--print (locale)
+--print ("Has Bounty" .. tostring(PlayerHasBounty()))
+--print ("Popup: " .. tostring(popupShown))
     if not PlayerHasBounty() then
         return
     end
@@ -320,6 +300,92 @@ function TryShowPopup()
     popupShown = true
     ShowBountyToast()
 
+end
+
+function GetCofferShardsWorldQuests(callback)
+      local result = {
+        worldQuests = {},
+        specialAssignments = {}
+    }
+    -- Zone IDs Midnight
+    local zonesToCheck = {2395, 2413, 2405, 2437, 2393,2424} 
+    local scanned = 0
+    finished = 0
+		for questId, data in pairs(worldQuestsIDs) do
+			if C_QuestLog.IsQuestFlaggedCompleted(questId)  then 
+				finished = finished+1
+			end
+			if C_TaskQuest.IsActive(questId) then 
+					local zoneId = C_TaskQuest.GetQuestZoneID(questId)
+					local mapInfo = C_Map.GetMapInfo(zoneId)
+					local zoneName = mapInfo and mapInfo.name or ("Zone " .. zoneID)
+							table.insert(result.specialAssignments, {
+							questID = tonumber(questId),
+							zone = zoneName,
+							title   = data.saTitle,
+							zoneID  = zoneId,
+							poiID   = data.saAreaPoid
+							})
+			end
+		end	
+	
+    for _, zoneID in ipairs(zonesToCheck) do
+        local quests = C_TaskQuest.GetQuestsOnMap(zoneID)
+        local special_a = C_AreaPoiInfo.GetAreaPOIForMap(zoneID)
+		local mapInfo = C_Map.GetMapInfo(zoneID)
+        local zoneName = mapInfo and mapInfo.name or ("Zone " .. zoneID)
+		
+		if special_a and #special_a > 0 then	
+			for _, specialData in ipairs(special_a) do
+               for questId, data in pairs(worldQuestsIDs) do					
+					 if specialData == data.saAreaPoid then
+						    table.insert(result.specialAssignments, {
+							questID = tonumber(questId),
+							zone = zoneName,
+							title   = data.saTitle,
+							zoneID  = zoneID,
+							poiID   = data.saAreaPoid
+							})
+					 end	
+			   end
+			end
+		end	
+
+        if quests and #quests > 0 then             
+            for _, questData in ipairs(quests) do
+                local questID = questData.questID
+			
+                if questID and questID > 0 then
+                    if C_QuestLog.IsWorldQuest(questID) and zoneID == questData.mapID and not C_QuestLog.IsQuestFlaggedCompleted(questID) then					   
+                        scanned = scanned + 1
+                        local currencies = C_QuestLog.GetQuestRewardCurrencies(questID)
+
+						if currencies then
+                            for _, currencyInfo in ipairs(currencies) do
+                                if currencyInfo.currencyID == 3310 or currencyInfo.name == "Coffer Key Shards" then
+                                    local title = C_TaskQuest.GetQuestInfoByQuestID(questID) or "Unbekannte Quest"
+                                    local amount = currencyInfo.totalRewardAmount
+                                    table.insert(result.worldQuests, {
+                                        questID = questID, 
+                                        title = title, 
+                                        zone = zoneName, 
+                                        zoneID = zoneID,
+										amount = amount
+                                    })                                    
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if callback and type(callback) == "function" then
+        callback(result)
+    end
+    
+    return result
 end
 
 -- Void Theme
@@ -423,88 +489,3 @@ function setBackdropBorderColor(frame, color)
     end
 end
 
-function GetCofferShardsWorldQuests(callback)
-      local result = {
-        worldQuests = {},
-        specialAssignments = {}
-    }
-    -- Zone IDs Midnight
-    local zonesToCheck = {2395, 2413, 2405, 2437, 2393,2424} 
-    local scanned = 0
-    finished = 0
-		for questId, data in pairs(worldQuestsIDs) do
-			if C_QuestLog.IsQuestFlaggedCompleted(questId)  then 
-				finished = finished+1
-			end
-			if C_TaskQuest.IsActive(questId) then 
-					local zoneId = C_TaskQuest.GetQuestZoneID(questId)
-					local mapInfo = C_Map.GetMapInfo(zoneId)
-					local zoneName = mapInfo and mapInfo.name or ("Zone " .. zoneID)
-							table.insert(result.specialAssignments, {
-							questID = tonumber(questId),
-							zone = zoneName,
-							title   = data.saTitle,
-							zoneID  = zoneId,
-							poiID   = data.saAreaPoid
-							})
-			end
-		end	
-	
-    for _, zoneID in ipairs(zonesToCheck) do
-        local quests = C_TaskQuest.GetQuestsOnMap(zoneID)
-        local special_a = C_AreaPoiInfo.GetAreaPOIForMap(zoneID)
-		local mapInfo = C_Map.GetMapInfo(zoneID)
-        local zoneName = mapInfo and mapInfo.name or ("Zone " .. zoneID)
-		
-		if special_a and #special_a > 0 then	
-			for _, specialData in ipairs(special_a) do
-               for questId, data in pairs(worldQuestsIDs) do					
-					 if specialData == data.saAreaPoid then
-						    table.insert(result.specialAssignments, {
-							questID = tonumber(questId),
-							zone = zoneName,
-							title   = data.saTitle,
-							zoneID  = zoneID,
-							poiID   = data.saAreaPoid
-							})
-					 end	
-			   end
-			end
-		end	
-
-        if quests and #quests > 0 then             
-            for _, questData in ipairs(quests) do
-                local questID = questData.questID
-			
-                if questID and questID > 0 then
-                    if C_QuestLog.IsWorldQuest(questID) and zoneID == questData.mapID and not C_QuestLog.IsQuestFlaggedCompleted(questID) then					   
-                        scanned = scanned + 1
-                        local currencies = C_QuestLog.GetQuestRewardCurrencies(questID)
-
-						if currencies then
-                            for _, currencyInfo in ipairs(currencies) do
-                                if currencyInfo.currencyID == 3310 or currencyInfo.name == "Coffer Key Shards" then
-                                    local title = C_TaskQuest.GetQuestInfoByQuestID(questID) or "Unbekannte Quest"
-                                    local amount = currencyInfo.totalRewardAmount
-                                    table.insert(result.worldQuests, {
-                                        questID = questID, 
-                                        title = title, 
-                                        zone = zoneName, 
-                                        zoneID = zoneID,
-										amount = amount
-                                    })                                    
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    if callback and type(callback) == "function" then
-        callback(result)
-    end
-    
-    return result
-end
