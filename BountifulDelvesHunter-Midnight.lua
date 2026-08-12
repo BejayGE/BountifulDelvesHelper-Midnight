@@ -1192,18 +1192,18 @@ function showUI()
 		row:SetHeight(80) 
 		container:AddChild(row)
 		
-		NullaeusIcon =  "Interface\\Icons\\Inv_120_raid_voidspire_hostgeneral"
+		SeasonNemesisIcon =  "Interface\\Icons\\inv_grovecrawlermount_red" --"Interface\\Icons\\Inv_120_raid_voidspire_hostgeneral"
         local nemesisIcon = AceGUI:Create("Icon")
-		nemesisIcon:SetImage(NullaeusIcon)
+		nemesisIcon:SetImage(SeasonNemesisIcon)
         nemesisIcon:SetImageSize(64, 64)
-        nemesisIcon:SetLabel("Nullaeus")
+        nemesisIcon:SetLabel("Azta'rec")
 		BDH_VoidStyleLabel(nemesisIcon, "highlight")
         nemesisIcon:SetWidth(80)
         row:AddChild(nemesisIcon)
 		nemesisIcon.frame:SetPoint("TOPLEFT", row.content, "TOPLEFT", 0, 0)
 		
-		nemesisQ = C_QuestLog.IsQuestFlaggedCompleted(93525)
-		nemesisInLog = C_QuestLog.IsOnQuest(93525) 
+		nemesisQ = C_QuestLog.IsQuestFlaggedCompleted(97482) -- (93525)
+		nemesisInLog = C_QuestLog.IsOnQuest(97482) --(93525) 
 		if nemesisQ then qText = LanguageBase[locale]["QDone"]
 		elseif nemesisInLog then 
 				qText = LanguageBase[locale]["QLog"]
@@ -1222,7 +1222,7 @@ function showUI()
 		nullaeussLbl.frame:SetPoint("TOPLEFT", nemesisIcon.image, "TOPRIGHT", 5, 0)
 		
 		local zoneLbl = AceGUI:Create("Label")
-        zoneLbl:SetText("Voidstorm")
+        zoneLbl:SetText(areaIDs[2512])
 		zoneLbl.frame:ClearAllPoints()
 		zoneLbl.frame:SetPoint("TOPLEFT", nullaeussLbl.frame, "TOPRIGHT", 10, 0)
 		BDH_VoidStyleLabel(zoneLbl, "dim")
@@ -1232,13 +1232,13 @@ function showUI()
 		zoneLbl.frame:ClearAllPoints()
 		zoneLbl.frame:SetPoint("TOPLEFT", nemesisLbl.frame, "BOTTOMLEFT", 0, -8)
 		
-		local x, y = 61.2, 71.6
-		local nmZone = 2405
+		local x, y = 51.2, 30.3
+		local nmZone = 2512 --2405
 		local nmBtn = AceGUI:Create("Button")
             nmBtn:SetText(LanguageBase[locale]["Wp"])
             nmBtn:SetWidth(100)
             nmBtn:SetCallback("OnClick", function()
-            setWaypointFromXY("default", nmZone, x , y , "Torment's Rise")
+            setWaypointFromXY("default", nmZone, x , y , "Venomfall Deeps")
 			end)
             container:AddChild(nmBtn)
 			
@@ -1246,7 +1246,7 @@ function showUI()
             ttBtn:SetText("TomTom")
             ttBtn:SetWidth(100)
             ttBtn:SetCallback("OnClick", function()        
-            setWaypointFromXY("tomtom", nmZone, x , y , "Torment's Rise")
+            setWaypointFromXY("tomtom", nmZone, x , y , "Venomfall Deeps")
 			end)
             container:AddChild(ttBtn)
 				if C_AddOns.IsAddOnLoaded("TomTom") == false then
@@ -1290,13 +1290,13 @@ function showUI()
 		delverBountyQ = C_QuestLog.IsQuestFlaggedCompleted(86371)
 		delverBountyinBag = PlayerHasBounty() --C_Item.GetItemCount(mapID) 
 		delverBountyActive = C_UnitAuras.GetPlayerAuraBySpellID(1254631)
-		if delverBountyQ then qText = THBitemName .. LanguageBase[locale]["THBLooted"]
-
-		else qText = itemName .. LanguageBase[locale]["THBNotLooted"]
+		local safeItemName = THBitemName or "Trove Hunter's Bounty"
+		if delverBountyQ then qText = safeItemName .. LanguageBase[locale]["THBLooted"]
+		else qText = safeItemName .. LanguageBase[locale]["THBNotLooted"]
 		end
 		if delverBountyinBag and not delverBountyActive then 
-				qText = qText .. THBitemName .. LanguageBase[locale]["THBBag"]
-		elseif delverBountyActive then qText = qText .. THBitemName .. LanguageBase[locale]["THBActive"]
+				qText = qText .. safeItemName .. LanguageBase[locale]["THBBag"]
+		elseif delverBountyActive then qText = qText .. safeItemName .. LanguageBase[locale]["THBActive"]
 		end
 		
 		local delverBountyLbl = AceGUI:Create("Label")
