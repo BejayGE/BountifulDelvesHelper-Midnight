@@ -17,7 +17,7 @@ function setWaypoint(type, mapPoiID, name)
 end
 
 function setWaypointAll(type, mapPoiID, name)
-    local waypoint = waypoints_all[mapPoiID]
+    local waypoint = waypoints_all[name]
     if type == "default" then
         local point = UiMapPoint.CreateFromCoordinates(waypoint["zone"], waypoint["x"] / 100, waypoint["y"] / 100)
         C_Map.SetUserWaypoint(point)
@@ -205,18 +205,16 @@ end
 function IsInDelve()
 
     if C_PartyInfo and C_PartyInfo.IsDelveInProgress and C_PartyInfo.IsDelveInProgress() then
+
         return true
+
     end
-    
-    if C_Scenario and C_Scenario.GetInfo then
-        local scenarioInfo = C_Scenario.GetInfo()
-        if scenarioInfo and scenarioInfo.type == Enum.ScenarioType.Delves then  
-            return true
-        end
-    end
-    
+
     return false
+
 end
+
+
 
 function CreateToast()
 
