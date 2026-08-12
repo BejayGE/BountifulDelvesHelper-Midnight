@@ -33,7 +33,8 @@ areaIDs = {
     [2405] = C_Map.GetMapInfo(2405).name,	--"Voidstorm",
     [2437] = C_Map.GetMapInfo(2437).name,	--"Zul'Aman",
     [2393] = C_Map.GetMapInfo(2393).name,	--"Silvermoon",
-	[2424] = C_Map.GetMapInfo(2424).name 	--"Isle of Quel'Danas"
+	[2424] = C_Map.GetMapInfo(2424).name, 	--"Isle of Quel'Danas"
+	[2512] = C_Map.GetMapInfo(2512).name	--"The Coiled Isle"
 }
 
 waypoints = {
@@ -64,7 +65,11 @@ waypoints = {
     [8426] = { ["zone"] = 2393, ["x"] = 40.76, ["y"] = 54.06 },
     -- "The Darkway"
     [8440] = { ["zone"] = 2393, ["x"] = 39.3, ["y"] = 31.8 },
-	
+	--Atal'Utek
+	-- "Gnarldor Isle"
+	[8762] = { ["zone"] = 2512, ["x"] = 64.4, ["y"] = 77.7 },
+	-- "The Ring of Glory"
+	[8765] = { ["zone"] = 2512, ["x"] = 71.2, ["y"] = 56.5 },
 	--Isle of Dorn
     -- "Earthcrawl Mines"
     [7863] = { ["zone"] = 2248, ["x"] = 38.6, ["y"] = 74.0 },
@@ -130,7 +135,13 @@ delveTiers = {
     { ["bountifulLootIlvl"] = 250, ["recommendedIlvl"] = 257, ["vaultIlvl"] = 259 },
     { ["bountifulLootIlvl"] = 250, ["recommendedIlvl"] = 265, ["vaultIlvl"] = 259 }
 }
+
 waypoints_all = {
+	--Atal'Utek
+	-- "Gnarldor Isle"
+	["Gnarldor Isle"] = { ["zone"] = 2512, ["x"] = 64.4, ["y"] = 77.7 },
+	-- "The Ring of Glory"
+	["The Ring of Glory"] = { ["zone"] = 2512, ["x"] = 71.2, ["y"] = 56.5 },
 	--Isle of Quel'Danas
 	-- "Parhelion Plaza"
 	["Parhelion Plaza"] = { ["zone"] = 2424, ["x"] = 46.3, ["y"] = 41.62 },
@@ -141,7 +152,7 @@ waypoints_all = {
 	-- "Atal'Aman"
     ["Atal'Aman"] = { ["zone"] = 2437, ["x"] = 24.8, ["y"] = 53.0 },
     -- "Twilight Crypt"
-    ["Twilight Crypt"] = { ["zone"] = 2437, ["x"] = 25.4, ["y"] = 84.3 },
+    ["Twilight Crypts"] = { ["zone"] = 2437, ["x"] = 25.4, ["y"] = 84.3 },
     --Voidstorm
     -- "Shadowguard Point"
     ["Shadowguard Point"] = { ["zone"] = 2405, ["x"] = 37.38, ["y"] = 47.7 },
